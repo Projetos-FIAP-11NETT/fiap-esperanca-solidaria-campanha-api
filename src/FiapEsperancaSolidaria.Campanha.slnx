@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="FiapEsperancaSolidaria.Campanha.Api/FiapEsperancaSolidaria.Campanha.Api.csproj" />
+  <Project Path="FiapEsperancaSolidaria.Campanha.Application/FiapEsperancaSolidaria.Campanha.Application.csproj" />
+  <Project Path="FiapEsperancaSolidaria.Campanha.Domain/FiapEsperancaSolidaria.Campanha.Domain.csproj" />
+  <Project Path="FiapEsperancaSolidaria.Campanha.Infrastructure/FiapEsperancaSolidaria.Campanha.Infrastructure.csproj" />
+  <Project Path="FiapEsperancaSolidaria.Campanha.Observability/FiapEsperancaSolidaria.Campanha.Observability.csproj" />
+  <Project Path="FiapEsperancaSolidaria.Campanha.Tests/FiapEsperancaSolidaria.Campanha.Tests.csproj" />
+</Solution>
