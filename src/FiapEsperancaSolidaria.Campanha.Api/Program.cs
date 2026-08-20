@@ -1,10 +1,9 @@
 using FiapEsperancaSolidaria.Campanha.Api.Configurations;
+using FiapEsperancaSolidaria.Campanha.Api.Configurations.OpenApi;
 using FiapEsperancaSolidaria.Campanha.Application.Configurations;
 using FiapEsperancaSolidaria.Campanha.Infrastructure.Configurations;
-using FiapEsperancaSolidaria.Campanha.Infrastructure.Data;
 using FiapEsperancaSolidaria.Campanha.Observability.Configurations;
 using FiapEsperancaSolidaria.Campanha.Observability.Middlewares;
-using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,28 +18,29 @@ builder.Host.UseSerilog((context, loggerConfiguration) =>
 
 builder.Services.AddControllers();
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
 builder.Services.AddApplication();
-builder.Services.AddInfrastructure();
+
+builder.Services.AddInfrastructure(builder.Configuration);
+
 builder.Services.AddObservability();
+
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddAuthConfig(builder.Configuration);
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerConfig();
 
-builder.Services
-    .AddHealthChecks()
-    .AddNpgSql(builder.Configuration.GetConnectionString("DefaultConnection")!, name: "postgres");
+builder.Services.AddOpenApiConfiguration();
+
+builder.Services.AddHealthCheckConfiguration(builder.Configuration);
+
+
 
 var app = builder.Build();
 
 app.MigrateDatabase();
 
-app.UseSwaggerConfig();
+app.MapOpenApiConfiguration();
 
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<ExceptionMiddleware>();
