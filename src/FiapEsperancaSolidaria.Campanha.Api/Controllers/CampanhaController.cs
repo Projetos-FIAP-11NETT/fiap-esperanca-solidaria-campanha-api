@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FiapEsperancaSolidaria.Campanha.Api.Controllers;
 
 [ApiController]
-[Route("api/v1/campanhas")]
+[Route("api/v1/[controller]")]
 public class CampanhaController : ControllerBase
 {
     private readonly IMediator _mediator;
