@@ -24,6 +24,7 @@ builder.Services.AddControllers()
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddObservability();
+
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddAuthConfig(builder.Configuration, builder.Environment);

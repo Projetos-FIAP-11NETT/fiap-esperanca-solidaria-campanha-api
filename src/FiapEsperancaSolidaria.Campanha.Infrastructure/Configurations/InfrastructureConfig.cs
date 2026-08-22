@@ -17,6 +17,7 @@ public static class InfrastructureConfig
             options => options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
 
         services.AddScoped<ICampanhaRepository, CampanhaRepository>();
+        services.AddScoped<IDonationRepository, DonationRepository>();
 
         services.AddStackExchangeRedisCache(options =>
         {
