@@ -3,6 +3,7 @@ using FiapEsperancaSolidaria.Campanha.Application.Features.CampanhaFeature.Comma
 using FiapEsperancaSolidaria.Campanha.Application.Features.CampanhaFeature.Commands.CriarCampanha;
 using FiapEsperancaSolidaria.Campanha.Application.Features.CampanhaFeature.Queries.ListarCampanhasPublicas;
 using FiapEsperancaSolidaria.Campanha.Application.Features.CampanhaFeature.Queries.ObterCampanhaPorId;
+using FiapEsperancaSolidaria.Campanha.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -20,13 +21,13 @@ public class CampanhaController : ControllerBase
         _mediator = mediator;
     }
 
-    /// <summary>Painel de transparência público: lista apenas campanhas ativas.</summary>
+    /// <summary>Painel de transparência público: lista campanhas ativas, opcionalmente filtradas por título.</summary>
     [HttpGet("publicas")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(IReadOnlyList<CampanhaPublicaResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> ListarPublicas(CancellationToken cancellationToken)
+    public async Task<IActionResult> ListarPublicas([FromQuery] string? titulo, CancellationToken cancellationToken)
     {
-        var resultado = await _mediator.Send(new ListarCampanhasPublicasQuery(), cancellationToken);
+        var resultado = await _mediator.Send(new ListarCampanhasPublicasQuery(titulo), cancellationToken);
         return Ok(resultado);
     }
 
@@ -77,4 +78,4 @@ public record AtualizarCampanhaRequest(
     DateTime DataFim,
     decimal MetaFinanceira,
     string? Imagem,
-    string Status);
+    StatusCampanha Status);

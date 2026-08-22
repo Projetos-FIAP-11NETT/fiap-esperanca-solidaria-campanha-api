@@ -1,4 +1,5 @@
 using FiapEsperancaSolidaria.Campanha.Application.Features.CampanhaFeature.Commands.CriarCampanha;
+using FiapEsperancaSolidaria.Campanha.Domain.Contracts.Cache;
 using FiapEsperancaSolidaria.Campanha.Domain.Contracts.Repositories;
 using FiapEsperancaSolidaria.Campanha.Domain.Enums;
 using FluentAssertions;
@@ -11,12 +12,13 @@ namespace FiapEsperancaSolidaria.Campanha.Tests.Unit.Application.Campanhas.Comma
 public class CriarCampanhaCommandHandlerTest
 {
     private readonly Mock<ICampanhaRepository> _campanhaRepositoryMock = new();
+    private readonly Mock<ICacheService> _cacheServiceMock = new();
 
     [Fact]
     public async Task Handle_WhenDadosValidos_ShouldCriarCampanhaEChamarRepositorio()
     {
         // Arrange
-        var handler = new CriarCampanhaCommandHandler(_campanhaRepositoryMock.Object);
+        var handler = new CriarCampanhaCommandHandler(_campanhaRepositoryMock.Object, _cacheServiceMock.Object);
         var command = new CriarCampanhaCommand(
             "Título",
             "Descrição",
@@ -35,6 +37,10 @@ public class CriarCampanhaCommandHandlerTest
 
         _campanhaRepositoryMock.Verify(
             r => r.AdicionarAsync(It.IsAny<CampanhaEntity>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        _cacheServiceMock.Verify(
+            c => c.RemoverAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 }

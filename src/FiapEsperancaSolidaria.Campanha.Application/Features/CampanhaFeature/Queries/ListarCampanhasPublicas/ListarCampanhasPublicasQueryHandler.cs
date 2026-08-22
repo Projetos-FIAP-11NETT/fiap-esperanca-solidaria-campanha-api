@@ -18,7 +18,7 @@ public class ListarCampanhasPublicasQueryHandler
         ListarCampanhasPublicasQuery request,
         CancellationToken cancellationToken)
     {
-        var campanhas = await _campanhaRepository.ListarAtivasAsync(cancellationToken);
+        var campanhas = await _campanhaRepository.ListarAtivasAsync(request.Titulo, cancellationToken);
 
         return campanhas
             .Select(c => new CampanhaPublicaResponse(c.Id, c.Titulo, c.MetaFinanceira, c.ValorTotalArrecadado))

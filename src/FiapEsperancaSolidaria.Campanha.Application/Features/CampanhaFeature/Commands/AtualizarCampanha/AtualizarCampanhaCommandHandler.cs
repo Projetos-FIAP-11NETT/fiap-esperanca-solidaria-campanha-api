@@ -1,6 +1,7 @@
+using FiapEsperancaSolidaria.Campanha.Application.Behaviors;
 using FiapEsperancaSolidaria.Campanha.Application.DTOs;
+using FiapEsperancaSolidaria.Campanha.Domain.Contracts.Cache;
 using FiapEsperancaSolidaria.Campanha.Domain.Contracts.Repositories;
-using FiapEsperancaSolidaria.Campanha.Domain.Enums;
 using FiapEsperancaSolidaria.Campanha.Domain.Exceptions;
 using MediatR;
 
@@ -9,10 +10,12 @@ namespace FiapEsperancaSolidaria.Campanha.Application.Features.CampanhaFeature.C
 public class AtualizarCampanhaCommandHandler : IRequestHandler<AtualizarCampanhaCommand, CampanhaResponse>
 {
     private readonly ICampanhaRepository _campanhaRepository;
+    private readonly ICacheService _cacheService;
 
-    public AtualizarCampanhaCommandHandler(ICampanhaRepository campanhaRepository)
+    public AtualizarCampanhaCommandHandler(ICampanhaRepository campanhaRepository, ICacheService cacheService)
     {
         _campanhaRepository = campanhaRepository;
+        _cacheService = cacheService;
     }
 
     public async Task<CampanhaResponse> Handle(AtualizarCampanhaCommand request, CancellationToken cancellationToken)
@@ -28,10 +31,12 @@ public class AtualizarCampanhaCommandHandler : IRequestHandler<AtualizarCampanha
             request.MetaFinanceira,
             request.Imagem);
 
-        var novoStatus = Enum.Parse<StatusCampanha>(request.Status, ignoreCase: true);
-        campanha.AlterarStatus(novoStatus);
+        campanha.AlterarStatus(request.Status);
 
         await _campanhaRepository.AtualizarAsync(campanha, cancellationToken);
+
+        await _cacheService.RemoverAsync(CacheKeys.CampanhasPublicas(), cancellationToken);
+        await _cacheService.RemoverAsync(CacheKeys.Campanha(campanha.Id), cancellationToken);
 
         return new CampanhaResponse(
             campanha.Id,

@@ -1,4 +1,5 @@
 using FiapEsperancaSolidaria.Campanha.Application.DTOs;
+using FiapEsperancaSolidaria.Campanha.Domain.Enums;
 using MediatR;
 
 namespace FiapEsperancaSolidaria.Campanha.Application.Features.CampanhaFeature.Commands.AtualizarCampanha;
@@ -11,4 +12,4 @@ public sealed record AtualizarCampanhaCommand(
     DateTime DataFim,
     decimal MetaFinanceira,
     string? Imagem,
-    string Status) : IRequest<CampanhaResponse>;
+    StatusCampanha Status) : IRequest<CampanhaResponse>;

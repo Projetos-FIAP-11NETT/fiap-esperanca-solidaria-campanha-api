@@ -1,4 +1,6 @@
+using FiapEsperancaSolidaria.Campanha.Application.Behaviors;
 using FiapEsperancaSolidaria.Campanha.Application.DTOs;
+using FiapEsperancaSolidaria.Campanha.Domain.Contracts.Cache;
 using FiapEsperancaSolidaria.Campanha.Domain.Contracts.Repositories;
 using MediatR;
 
@@ -7,10 +9,12 @@ namespace FiapEsperancaSolidaria.Campanha.Application.Features.CampanhaFeature.C
 public class CriarCampanhaCommandHandler : IRequestHandler<CriarCampanhaCommand, CampanhaResponse>
 {
     private readonly ICampanhaRepository _campanhaRepository;
+    private readonly ICacheService _cacheService;
 
-    public CriarCampanhaCommandHandler(ICampanhaRepository campanhaRepository)
+    public CriarCampanhaCommandHandler(ICampanhaRepository campanhaRepository, ICacheService cacheService)
     {
         _campanhaRepository = campanhaRepository;
+        _cacheService = cacheService;
     }
 
     public async Task<CampanhaResponse> Handle(CriarCampanhaCommand request, CancellationToken cancellationToken)
@@ -24,6 +28,8 @@ public class CriarCampanhaCommandHandler : IRequestHandler<CriarCampanhaCommand,
             request.Imagem);
 
         await _campanhaRepository.AdicionarAsync(campanha, cancellationToken);
+
+        await _cacheService.RemoverAsync(CacheKeys.CampanhasPublicas(), cancellationToken);
 
         return new CampanhaResponse(
             campanha.Id,

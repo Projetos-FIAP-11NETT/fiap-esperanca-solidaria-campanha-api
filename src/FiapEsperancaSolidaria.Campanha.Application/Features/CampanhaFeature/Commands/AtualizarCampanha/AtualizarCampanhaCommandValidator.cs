@@ -1,17 +1,20 @@
-using FiapEsperancaSolidaria.Campanha.Domain.Enums;
+using FiapEsperancaSolidaria.Campanha.Domain.Contracts.Repositories;
 using FluentValidation;
 
 namespace FiapEsperancaSolidaria.Campanha.Application.Features.CampanhaFeature.Commands.AtualizarCampanha;
 
 public class AtualizarCampanhaCommandValidator : AbstractValidator<AtualizarCampanhaCommand>
 {
-    public AtualizarCampanhaCommandValidator()
+    public AtualizarCampanhaCommandValidator(ICampanhaRepository campanhaRepository)
     {
         RuleFor(x => x.Id).NotEmpty();
 
         RuleFor(x => x.Titulo)
             .NotEmpty().WithMessage("O título é obrigatório.")
-            .MaximumLength(200);
+            .MaximumLength(200)
+            .MustAsync(async (command, titulo, cancellationToken) =>
+                !await campanhaRepository.ExisteComTituloAsync(titulo, command.Id, cancellationToken))
+            .WithMessage("Já existe uma campanha com esse título.");
 
         RuleFor(x => x.Descricao)
             .NotEmpty().WithMessage("A descrição é obrigatória.");
@@ -23,7 +26,6 @@ public class AtualizarCampanhaCommandValidator : AbstractValidator<AtualizarCamp
             .GreaterThan(0).WithMessage("A meta financeira deve ser maior que zero.");
 
         RuleFor(x => x.Status)
-            .Must(status => Enum.TryParse<StatusCampanha>(status, ignoreCase: true, out _))
-            .WithMessage("Status inválido. Valores aceitos: Ativa, Concluida, Cancelada.");
+            .IsInEnum().WithMessage("Status inválido. Valores aceitos: Ativa, Concluida, Cancelada.");
     }
 }

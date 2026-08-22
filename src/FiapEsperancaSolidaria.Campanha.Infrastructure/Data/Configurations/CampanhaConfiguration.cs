@@ -28,10 +28,18 @@ public class CampanhaConfiguration : IEntityTypeConfiguration<Domain.Entities.Ca
         builder.Property(c => c.ValorTotalArrecadado)
             .HasPrecision(18, 2);
 
-        builder.Property(c => c.Status)
-            .HasConversion<string>()
-            .HasMaxLength(20);
+        // Mapeamento padrão do EF Core para enum: inteiro (Ativa=1, Concluida=2, Cancelada=3).
+        builder.Property(c => c.Status);
 
         builder.HasIndex(c => c.Status);
+
+        // Coluna gerada com o título em minúsculas, só pra sustentar o índice único
+        // case-insensitive abaixo — não é exposta na entidade de domínio.
+        builder.Property<string>("TituloNormalizado")
+            .HasComputedColumnSql("lower(\"Titulo\")", stored: true);
+
+        builder.HasIndex("TituloNormalizado")
+            .IsUnique()
+            .HasDatabaseName("IX_Campanhas_TituloNormalizado");
     }
 }

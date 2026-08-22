@@ -1,14 +1,18 @@
+using FiapEsperancaSolidaria.Campanha.Domain.Contracts.Repositories;
 using FluentValidation;
 
 namespace FiapEsperancaSolidaria.Campanha.Application.Features.CampanhaFeature.Commands.CriarCampanha;
 
 public class CriarCampanhaCommandValidator : AbstractValidator<CriarCampanhaCommand>
 {
-    public CriarCampanhaCommandValidator()
+    public CriarCampanhaCommandValidator(ICampanhaRepository campanhaRepository)
     {
         RuleFor(x => x.Titulo)
             .NotEmpty().WithMessage("O título é obrigatório.")
-            .MaximumLength(200);
+            .MaximumLength(200)
+            .MustAsync(async (titulo, cancellationToken) =>
+                !await campanhaRepository.ExisteComTituloAsync(titulo, cancellationToken: cancellationToken))
+            .WithMessage("Já existe uma campanha com esse título.");
 
         RuleFor(x => x.Descricao)
             .NotEmpty().WithMessage("A descrição é obrigatória.");
