@@ -7,8 +7,8 @@
   },
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:5054", "type": "string" },
-    { "key": "campanhaId", "value": "", "type": "string" },
-    { "key": "campanhaTitulo", "value": "", "type": "string" }
+    { "key": "campaignId", "value": "", "type": "string" },
+    { "key": "campaignTitle", "value": "", "type": "string" }
   ],
   "item": [
     {
@@ -43,9 +43,9 @@
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{baseUrl}}/api/v1/campanhas/publicas",
+              "raw": "{{baseUrl}}/api/v1/campaigns/public",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "campanhas", "publicas"]
+              "path": ["api", "v1", "campaigns", "public"]
             }
           },
           "event": [
@@ -70,9 +70,9 @@
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{baseUrl}}/api/v1/campanhas/{{campanhaId}}",
+              "raw": "{{baseUrl}}/api/v1/campaigns/{{campaignId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "campanhas", "{{campanhaId}}"]
+              "path": ["api", "v1", "campaigns", "{{campaignId}}"]
             }
           },
           "event": [
@@ -86,7 +86,7 @@
                   "",
                   "pm.test('Retorna a campanha correta', function () {",
                   "    var json = pm.response.json();",
-                  "    pm.expect(json.id).to.eql(pm.collectionVariables.get('campanhaId'));",
+                  "    pm.expect(json.id).to.eql(pm.collectionVariables.get('campaignId'));",
                   "});"
                 ]
               }
@@ -98,9 +98,9 @@
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{baseUrl}}/api/v1/campanhas/00000000-0000-0000-0000-000000000000",
+              "raw": "{{baseUrl}}/api/v1/campaigns/00000000-0000-0000-0000-000000000000",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "campanhas", "00000000-0000-0000-0000-000000000000"]
+              "path": ["api", "v1", "campaigns", "00000000-0000-0000-0000-000000000000"]
             }
           },
           "event": [
@@ -130,13 +130,13 @@
               { "key": "X-Dev-Role", "value": "GestorONG" }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/campanhas",
+              "raw": "{{baseUrl}}/api/v1/campaigns",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "campanhas"]
+              "path": ["api", "v1", "campaigns"]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"titulo\": \"Campanha de Teste Postman\",\n  \"descricao\": \"Criada via coleção Postman\",\n  \"dataInicio\": \"{{$isoTimestamp}}\",\n  \"dataFim\": \"2026-12-31T00:00:00Z\",\n  \"metaFinanceira\": 5000,\n  \"imagem\": null\n}"
+              "raw": "{\n  \"title\": \"Campaign Postman Test\",\n  \"description\": \"Criada via coleção Postman\",\n  \"startDate\": \"{{$isoTimestamp}}\",\n  \"endDate\": \"2026-12-31T00:00:00Z\",\n  \"financialGoal\": 5000,\n  \"image\": null\n}"
             }
           },
           "event": [
@@ -148,12 +148,12 @@
                   "    pm.response.to.have.status(201);",
                   "});",
                   "",
-                  "pm.test('Campanha criada como Ativa e sem arrecadação', function () {",
+                  "pm.test('Campanha criada como Active e sem arrecadação', function () {",
                   "    var json = pm.response.json();",
-                  "    pm.expect(json.status).to.eql('Ativa');",
-                  "    pm.expect(json.valorTotalArrecadado).to.eql(0);",
-                  "    pm.collectionVariables.set('campanhaId', json.id);",
-                  "    pm.collectionVariables.set('campanhaTitulo', json.titulo);",
+                  "    pm.expect(json.status).to.eql('Active');",
+                  "    pm.expect(json.totalRaised).to.eql(0);",
+                  "    pm.collectionVariables.set('campaignId', json.id);",
+                  "    pm.collectionVariables.set('campaignTitle', json.title);",
                   "});"
                 ]
               }
@@ -169,13 +169,13 @@
               { "key": "X-Dev-Role", "value": "GestorONG" }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/campanhas",
+              "raw": "{{baseUrl}}/api/v1/campaigns",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "campanhas"]
+              "path": ["api", "v1", "campaigns"]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"titulo\": \"\",\n  \"descricao\": \"Descrição\",\n  \"dataInicio\": \"{{$isoTimestamp}}\",\n  \"dataFim\": \"2026-12-31T00:00:00Z\",\n  \"metaFinanceira\": 0,\n  \"imagem\": null\n}"
+              "raw": "{\n  \"title\": \"\",\n  \"description\": \"Descrição\",\n  \"startDate\": \"{{$isoTimestamp}}\",\n  \"endDate\": \"2026-12-31T00:00:00Z\",\n  \"financialGoal\": 0,\n  \"image\": null\n}"
             }
           },
           "event": [
@@ -200,13 +200,13 @@
               { "key": "X-Dev-Role", "value": "GestorONG" }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/campanhas",
+              "raw": "{{baseUrl}}/api/v1/campaigns",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "campanhas"]
+              "path": ["api", "v1", "campaigns"]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"titulo\": \"{{campanhaTitulo}}\",\n  \"descricao\": \"Tentativa de duplicar o título\",\n  \"dataInicio\": \"{{$isoTimestamp}}\",\n  \"dataFim\": \"2026-12-31T00:00:00Z\",\n  \"metaFinanceira\": 1000,\n  \"imagem\": null\n}"
+              "raw": "{\n  \"title\": \"{{campaignTitle}}\",\n  \"description\": \"Tentativa de duplicar o título\",\n  \"startDate\": \"{{$isoTimestamp}}\",\n  \"endDate\": \"2026-12-31T00:00:00Z\",\n  \"financialGoal\": 1000,\n  \"image\": null\n}"
             }
           },
           "event": [
@@ -215,7 +215,7 @@
               "script": {
                 "exec": [
                   "pm.test('Roda \"Criar Campanha\" antes deste request', function () {",
-                  "    pm.expect(pm.collectionVariables.get('campanhaTitulo')).to.not.be.empty;",
+                  "    pm.expect(pm.collectionVariables.get('campaignTitle')).to.not.be.empty;",
                   "});",
                   "",
                   "pm.test('Status code é 400 (título já existe)', function () {",
@@ -234,13 +234,13 @@
               { "key": "Content-Type", "value": "application/json" }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/campanhas",
+              "raw": "{{baseUrl}}/api/v1/campaigns",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "campanhas"]
+              "path": ["api", "v1", "campaigns"]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"titulo\": \"Campanha sem auth\",\n  \"descricao\": \"Descrição\",\n  \"dataInicio\": \"{{$isoTimestamp}}\",\n  \"dataFim\": \"2026-12-31T00:00:00Z\",\n  \"metaFinanceira\": 1000,\n  \"imagem\": null\n}"
+              "raw": "{\n  \"title\": \"Campaign sem auth\",\n  \"description\": \"Descrição\",\n  \"startDate\": \"{{$isoTimestamp}}\",\n  \"endDate\": \"2026-12-31T00:00:00Z\",\n  \"financialGoal\": 1000,\n  \"image\": null\n}"
             }
           },
           "event": [
@@ -265,13 +265,13 @@
               { "key": "X-Dev-Role", "value": "Doador" }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/campanhas",
+              "raw": "{{baseUrl}}/api/v1/campaigns",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "campanhas"]
+              "path": ["api", "v1", "campaigns"]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"titulo\": \"Campanha via Doador\",\n  \"descricao\": \"Descrição\",\n  \"dataInicio\": \"{{$isoTimestamp}}\",\n  \"dataFim\": \"2026-12-31T00:00:00Z\",\n  \"metaFinanceira\": 1000,\n  \"imagem\": null\n}"
+              "raw": "{\n  \"title\": \"Campaign via Doador\",\n  \"description\": \"Descrição\",\n  \"startDate\": \"{{$isoTimestamp}}\",\n  \"endDate\": \"2026-12-31T00:00:00Z\",\n  \"financialGoal\": 1000,\n  \"image\": null\n}"
             }
           },
           "event": [
@@ -296,13 +296,13 @@
               { "key": "X-Dev-Role", "value": "GestorONG" }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/campanhas/{{campanhaId}}",
+              "raw": "{{baseUrl}}/api/v1/campaigns/{{campaignId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "campanhas", "{{campanhaId}}"]
+              "path": ["api", "v1", "campaigns", "{{campaignId}}"]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"titulo\": \"Campanha de Teste Postman - Atualizada\",\n  \"descricao\": \"Atualizada via coleção Postman\",\n  \"dataInicio\": \"{{$isoTimestamp}}\",\n  \"dataFim\": \"2026-12-31T00:00:00Z\",\n  \"metaFinanceira\": 8000,\n  \"imagem\": null,\n  \"status\": \"Ativa\"\n}"
+              "raw": "{\n  \"title\": \"Campaign Postman Test - Atualizada\",\n  \"description\": \"Atualizada via coleção Postman\",\n  \"startDate\": \"{{$isoTimestamp}}\",\n  \"endDate\": \"2026-12-31T00:00:00Z\",\n  \"financialGoal\": 8000,\n  \"image\": null,\n  \"status\": \"Active\"\n}"
             }
           },
           "event": [
@@ -316,8 +316,8 @@
                   "",
                   "pm.test('Título e meta refletem a atualização', function () {",
                   "    var json = pm.response.json();",
-                  "    pm.expect(json.titulo).to.eql('Campanha de Teste Postman - Atualizada');",
-                  "    pm.expect(json.metaFinanceira).to.eql(8000);",
+                  "    pm.expect(json.title).to.eql('Campaign Postman Test - Atualizada');",
+                  "    pm.expect(json.financialGoal).to.eql(8000);",
                   "});"
                 ]
               }
@@ -333,13 +333,13 @@
               { "key": "X-Dev-Role", "value": "GestorONG" }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/campanhas/00000000-0000-0000-0000-000000000000",
+              "raw": "{{baseUrl}}/api/v1/campaigns/00000000-0000-0000-0000-000000000000",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "campanhas", "00000000-0000-0000-0000-000000000000"]
+              "path": ["api", "v1", "campaigns", "00000000-0000-0000-0000-000000000000"]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"titulo\": \"Título\",\n  \"descricao\": \"Descrição\",\n  \"dataInicio\": \"{{$isoTimestamp}}\",\n  \"dataFim\": \"2026-12-31T00:00:00Z\",\n  \"metaFinanceira\": 1000,\n  \"imagem\": null,\n  \"status\": \"Ativa\"\n}"
+              "raw": "{\n  \"title\": \"Title\",\n  \"description\": \"Description\",\n  \"startDate\": \"{{$isoTimestamp}}\",\n  \"endDate\": \"2026-12-31T00:00:00Z\",\n  \"financialGoal\": 1000,\n  \"image\": null,\n  \"status\": \"Active\"\n}"
             }
           },
           "event": [
@@ -363,13 +363,13 @@
               { "key": "Content-Type", "value": "application/json" }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/campanhas/{{campanhaId}}",
+              "raw": "{{baseUrl}}/api/v1/campaigns/{{campaignId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "campanhas", "{{campanhaId}}"]
+              "path": ["api", "v1", "campaigns", "{{campaignId}}"]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"titulo\": \"Título\",\n  \"descricao\": \"Descrição\",\n  \"dataInicio\": \"{{$isoTimestamp}}\",\n  \"dataFim\": \"2026-12-31T00:00:00Z\",\n  \"metaFinanceira\": 1000,\n  \"imagem\": null,\n  \"status\": \"Ativa\"\n}"
+              "raw": "{\n  \"title\": \"Title\",\n  \"description\": \"Description\",\n  \"startDate\": \"{{$isoTimestamp}}\",\n  \"endDate\": \"2026-12-31T00:00:00Z\",\n  \"financialGoal\": 1000,\n  \"image\": null,\n  \"status\": \"Active\"\n}"
             }
           },
           "event": [
@@ -395,9 +395,9 @@
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{baseUrl}}/api/v1/campanhas/publicas",
+              "raw": "{{baseUrl}}/api/v1/campaigns/public",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "campanhas", "publicas"]
+              "path": ["api", "v1", "campaigns", "public"]
             }
           },
           "event": [
@@ -411,7 +411,7 @@
                   "",
                   "pm.test('Contém a campanha criada', function () {",
                   "    var json = pm.response.json();",
-                  "    var encontrada = json.some(function (c) { return c.id === pm.collectionVariables.get('campanhaId'); });",
+                  "    var encontrada = json.some(function (c) { return c.id === pm.collectionVariables.get('campaignId'); });",
                   "    pm.expect(encontrada).to.be.true;",
                   "});"
                 ]
@@ -428,13 +428,13 @@
               { "key": "X-Dev-Role", "value": "GestorONG" }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/campanhas/{{campanhaId}}",
+              "raw": "{{baseUrl}}/api/v1/campaigns/{{campaignId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "campanhas", "{{campanhaId}}"]
+              "path": ["api", "v1", "campaigns", "{{campaignId}}"]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"titulo\": \"Campanha de Teste Postman - Atualizada\",\n  \"descricao\": \"Cancelada para validar invalidação de cache\",\n  \"dataInicio\": \"{{$isoTimestamp}}\",\n  \"dataFim\": \"2026-12-31T00:00:00Z\",\n  \"metaFinanceira\": 8000,\n  \"imagem\": null,\n  \"status\": \"Cancelada\"\n}"
+              "raw": "{\n  \"title\": \"Campaign Postman Test - Atualizada\",\n  \"description\": \"Cancelada para validar invalidação de cache\",\n  \"startDate\": \"{{$isoTimestamp}}\",\n  \"endDate\": \"2026-12-31T00:00:00Z\",\n  \"financialGoal\": 8000,\n  \"image\": null,\n  \"status\": \"Cancelled\"\n}"
             }
           },
           "event": [
@@ -455,9 +455,9 @@
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{baseUrl}}/api/v1/campanhas/publicas",
+              "raw": "{{baseUrl}}/api/v1/campaigns/public",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "campanhas", "publicas"]
+              "path": ["api", "v1", "campaigns", "public"]
             }
           },
           "event": [
@@ -471,7 +471,7 @@
                   "",
                   "pm.test('Campanha cancelada não aparece mais (cache não ficou stale)', function () {",
                   "    var json = pm.response.json();",
-                  "    var encontrada = json.some(function (c) { return c.id === pm.collectionVariables.get('campanhaId'); });",
+                  "    var encontrada = json.some(function (c) { return c.id === pm.collectionVariables.get('campaignId'); });",
                   "    pm.expect(encontrada).to.be.false;",
                   "});"
                 ]

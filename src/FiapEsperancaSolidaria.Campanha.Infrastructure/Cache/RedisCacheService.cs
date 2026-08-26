@@ -13,27 +13,27 @@ public class RedisCacheService : ICacheService
         _distributedCache = distributedCache;
     }
 
-    public async Task<T?> ObterAsync<T>(string chave, CancellationToken cancellationToken = default) where T : class
+    public async Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default) where T : class
     {
-        var valorSerializado = await _distributedCache.GetStringAsync(chave, cancellationToken);
+        var serializedValue = await _distributedCache.GetStringAsync(key, cancellationToken);
 
-        return valorSerializado is null
+        return serializedValue is null
             ? null
-            : JsonSerializer.Deserialize<T>(valorSerializado);
+            : JsonSerializer.Deserialize<T>(serializedValue);
     }
 
-    public async Task DefinirAsync<T>(string chave, T valor, TimeSpan? expiracao = null, CancellationToken cancellationToken = default) where T : class
+    public async Task SetAsync<T>(string key, T value, TimeSpan? expiration = null, CancellationToken cancellationToken = default) where T : class
     {
-        var opcoes = new DistributedCacheEntryOptions
+        var options = new DistributedCacheEntryOptions
         {
-            AbsoluteExpirationRelativeToNow = expiracao ?? TimeSpan.FromMinutes(1)
+            AbsoluteExpirationRelativeToNow = expiration ?? TimeSpan.FromMinutes(1)
         };
 
-        var valorSerializado = JsonSerializer.Serialize(valor);
+        var serializedValue = JsonSerializer.Serialize(value);
 
-        await _distributedCache.SetStringAsync(chave, valorSerializado, opcoes, cancellationToken);
+        await _distributedCache.SetStringAsync(key, serializedValue, options, cancellationToken);
     }
 
-    public Task RemoverAsync(string chave, CancellationToken cancellationToken = default)
-        => _distributedCache.RemoveAsync(chave, cancellationToken);
+    public Task RemoveAsync(string key, CancellationToken cancellationToken = default)
+        => _distributedCache.RemoveAsync(key, cancellationToken);
 }
