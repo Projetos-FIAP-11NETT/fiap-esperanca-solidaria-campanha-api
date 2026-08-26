@@ -6,17 +6,23 @@ anterior, que ainda misturava responsabilidades de mais de um microsserviço.
 
 ## Escopo deste repositório
 
-Só **Campanha**: CRUD (restrito a `GestorONG`), painel de transparência público
-e (a implementar) recebimento da intenção de doação — publica evento, não
-processa a doação. Cada responsabilidade do hackathon vive em repo próprio:
+**Campanha** (CRUD restrito a `GestorONG`, painel de transparência público) e
+**Doação** — decisão revista em 2026-08-26: ao contrário do que este arquivo
+dizia antes, o registro de doação **é persistido diretamente aqui**, como
+parte do agregado `Campaign` (`Campaign` é a raiz do agregado; `Donation` é
+entidade filha, sem repositório próprio — só existe através de
+`Campaign.AddDonation(...)`, FK `Donation.CampaignId → Campaigns.CampaignId`,
+`ON DELETE CASCADE`). Não publica mais evento de doação como intenção original;
+o fluxo é síncrono via `POST /api/v1/donations`.
 
-- **campanha-api** (aqui) — Campanhas + painel público + intenção de doação.
+- **campanha-api** (aqui) — Campanhas + painel público + registro de doação.
 - **usuarios-api** (ainda não criado) — cadastro de doador, autenticação.
-- **doacao-work** (`fiap-esperanca-solidaria-doacao-work`, hoje vazio) — consome
-  o evento de doação, atualiza `ValorTotalArrecadado`.
+- **doacao-work** (`fiap-esperanca-solidaria-doacao-work`, hoje vazio) — papel
+  em aberto agora que a doação é persistida aqui (ver "Decisões em aberto").
 
-Sem tabela de Doador/Doação neste repo. A identidade do doador vem só do claim
-do JWT (Firebase).
+A identidade do doador ainda vem só do claim do JWT (Firebase) — mas
+`CreateDonationCommand.DonorId` hoje é campo do request, não lido do claim
+ainda (gap conhecido, não resolvido nesta mudança).
 
 ## Decisões fechadas
 
@@ -27,6 +33,30 @@ do JWT (Firebase).
 - **Mensageria**: SQS via LocalStack (MassTransit) — ainda não implementado
   nesta primeira leva de código. ⚠️ O enunciado pede literalmente "RabbitMQ ou
   Kafka"; a escolha por SQS precisa ser justificada no PDF de arquitetura.
+  ⚠️ Com a doação agora persistida direto aqui (ver "Escopo deste
+  repositório"), o motivo original de existir mensageria (publicar evento de
+  intenção de doação pro doacao-work consumir) não se aplica mais do jeito que
+  foi pensado — precisa decidir se ainda existe uso pra SQS/MassTransit aqui
+  (ex.: publicar evento de doação *aprovada* pra notificação) ou se isso migra
+  todo pro doacao-work/notificacao-lambda.
+- **Agregado Campaign → Donation**: `Campaign` é `IAggregateRoot`; `Donation`
+  não tem repositório próprio nem é acessível fora do agregado — é sempre
+  criada via `Campaign.AddDonation(donorId, amount, paymentMethod)`, que
+  valida a invariante `CanReceiveDonation()` (só campanha `Active` recebe
+  doação; senão `BusinessException`, mapeada pro middleware como 422).
+  Persistência via `ICampaignRepository.UpdateAsync` — **não** existe mais
+  `IDonationRepository`/`Repository<T>` genérico (removidos: só faziam
+  sentido com `Donation` como aggregate root próprio). ⚠️ Pegadinha de EF
+  Core: como `Donation.Id` é gerado no construtor (`Guid.NewGuid()`), o
+  `DetectChanges` não reconhece a entidade nova automaticamente ao navegar a
+  partir de um `Campaign` já rastreado — sem marcar o estado como `Added`
+  explicitamente (feito em `CampaignRepository.UpdateAsync`), o EF tenta um
+  `UPDATE` em vez de `INSERT` e lança `DbUpdateConcurrencyException`. Se
+  adicionar outra entidade filha ao agregado com chave gerada no cliente,
+  repetir esse padrão.
+  `DonationStatus` começa em `Pending` — nada hoje transiciona pra `Approved`
+  nem atualiza `Campaign.TotalRaised`; esse fluxo (provavelmente via
+  aprovação de pagamento) ainda não foi implementado.
 - **Banco**: PostgreSQL (`campanha-db`, já provisionado no repo de infra em
   `k8s/shared/postgres-campanha`), só a entidade `Campanha`. Manifests
   (`postgres-pvc.yaml`, `postgres-statefulSet.yaml`, `postgres-svc.yaml`)
@@ -102,10 +132,12 @@ do `ILIKE`), cache Redis e testes de integração. Migrations testadas de
 verdade contra Postgres real (local via Docker e via manifests de Kubernetes
 num cluster local) — sobem limpo do zero.
 
-Endpoint de doação e mensageria (SQS) ainda **não implementados** conforme
-esse repositório deveria: existe uma implementação de `Donation` vinda de
-outra branch que persiste a doação localmente (contradiz a decisão acima de
-só publicar evento) — pendente de decisão do time, não mexida por ora.
+`POST /api/v1/donations` implementado e testado de ponta a ponta contra
+Postgres real: `Donation` como entidade filha do agregado `Campaign` (FK real,
+`ON DELETE CASCADE`), validado tanto o caminho feliz quanto as invariantes
+(campanha inexistente → 404, campanha não-`Active` → 422). Mensageria (SQS)
+segue não implementada — ver "Decisões fechadas" pro estado em aberto sobre
+se ainda faz sentido aqui.
 
 CI/CD ainda não criado. Manifests de Kubernetes existem só para a infra
 compartilhada (Postgres, Redis, Elasticsearch, LocalStack etc., no repo

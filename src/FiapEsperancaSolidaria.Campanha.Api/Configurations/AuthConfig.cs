@@ -19,11 +19,11 @@ public static class AuthConfig
         // A usuarios-api (emissora dos tokens Firebase) ainda não existe. Enquanto isso, em
         // Development e com Auth:DevBypassEnabled=true, aceita também um header X-Dev-Role
         // no lugar de um JWT real — nunca disponível fora de Development.
-        var devBypassHabilitado = environment.IsDevelopment()
+        var devBypassEnabled = environment.IsDevelopment()
             && configuration.GetValue<bool>("Auth:DevBypassEnabled");
 
         const string smartScheme = "Smart";
-        var defaultScheme = devBypassHabilitado ? smartScheme : JwtBearerDefaults.AuthenticationScheme;
+        var defaultScheme = devBypassEnabled ? smartScheme : JwtBearerDefaults.AuthenticationScheme;
 
         var authBuilder = services.AddAuthentication(options =>
         {
@@ -50,7 +50,7 @@ public static class AuthConfig
             };
         });
 
-        if (devBypassHabilitado)
+        if (devBypassEnabled)
         {
             authBuilder
                 .AddScheme<AuthenticationSchemeOptions, DevAuthHandler>(DevAuthHandler.SchemeName, _ => { })

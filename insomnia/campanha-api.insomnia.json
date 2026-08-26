@@ -19,9 +19,9 @@
       "name": "Base Environment",
       "data": {
         "baseUrl": "http://localhost:5054",
-        "campanhaId": ""
+        "campaignId": ""
       },
-      "dataPropertyOrder": { "&": ["baseUrl", "campanhaId"] },
+      "dataPropertyOrder": { "&": ["baseUrl", "campaignId"] },
       "color": null,
       "isPrivate": false,
       "metaSortKey": 1
@@ -58,7 +58,7 @@
       "name": "Listar Campanhas Públicas",
       "description": "Esperado: 200 com lista de campanhas ativas.",
       "method": "GET",
-      "url": "{{ _.baseUrl }}/api/v1/campanhas/publicas",
+      "url": "{{ _.baseUrl }}/api/v1/campaigns/public",
       "headers": [],
       "body": {},
       "metaSortKey": 1
@@ -68,9 +68,9 @@
       "_type": "request",
       "parentId": "fld_publico",
       "name": "Obter Campanha Por Id",
-      "description": "Esperado: 200. Rode 'Criar Campanha' antes e cole o id retornado na variável de ambiente campanhaId.",
+      "description": "Esperado: 200. Rode 'Criar Campanha' antes e cole o id retornado na variável de ambiente campaignId.",
       "method": "GET",
-      "url": "{{ _.baseUrl }}/api/v1/campanhas/{{ _.campanhaId }}",
+      "url": "{{ _.baseUrl }}/api/v1/campaigns/{{ _.campaignId }}",
       "headers": [],
       "body": {},
       "metaSortKey": 2
@@ -82,7 +82,7 @@
       "name": "Obter Campanha Por Id - Inexistente (404)",
       "description": "Esperado: 404.",
       "method": "GET",
-      "url": "{{ _.baseUrl }}/api/v1/campanhas/00000000-0000-0000-0000-000000000000",
+      "url": "{{ _.baseUrl }}/api/v1/campaigns/00000000-0000-0000-0000-000000000000",
       "headers": [],
       "body": {},
       "metaSortKey": 3
@@ -99,16 +99,16 @@
       "_type": "request",
       "parentId": "fld_crud",
       "name": "Criar Campanha",
-      "description": "Esperado: 201. Copie o 'id' da resposta pra variável de ambiente campanhaId, usada nos demais requests.",
+      "description": "Esperado: 201. Copie o 'id' da resposta pra variável de ambiente campaignId, usada nos demais requests.",
       "method": "POST",
-      "url": "{{ _.baseUrl }}/api/v1/campanhas",
+      "url": "{{ _.baseUrl }}/api/v1/campaigns",
       "headers": [
         { "name": "Content-Type", "value": "application/json" },
         { "name": "X-Dev-Role", "value": "GestorONG" }
       ],
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"titulo\": \"Campanha de Teste Insomnia\",\n  \"descricao\": \"Criada via coleção Insomnia\",\n  \"dataInicio\": \"2026-08-19T00:00:00Z\",\n  \"dataFim\": \"2026-12-31T00:00:00Z\",\n  \"metaFinanceira\": 5000,\n  \"imagem\": null\n}"
+        "text": "{\n  \"title\": \"Campaign Insomnia Test\",\n  \"description\": \"Criada via coleção Insomnia\",\n  \"startDate\": \"2026-08-19T00:00:00Z\",\n  \"endDate\": \"2026-12-31T00:00:00Z\",\n  \"financialGoal\": 5000,\n  \"image\": null\n}"
       },
       "metaSortKey": 1
     },
@@ -119,14 +119,14 @@
       "name": "Criar Campanha - Payload Inválido (400)",
       "description": "Esperado: 400, título vazio e meta financeira zerada disparam o FluentValidation.",
       "method": "POST",
-      "url": "{{ _.baseUrl }}/api/v1/campanhas",
+      "url": "{{ _.baseUrl }}/api/v1/campaigns",
       "headers": [
         { "name": "Content-Type", "value": "application/json" },
         { "name": "X-Dev-Role", "value": "GestorONG" }
       ],
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"titulo\": \"\",\n  \"descricao\": \"Descrição\",\n  \"dataInicio\": \"2026-08-19T00:00:00Z\",\n  \"dataFim\": \"2026-12-31T00:00:00Z\",\n  \"metaFinanceira\": 0,\n  \"imagem\": null\n}"
+        "text": "{\n  \"title\": \"\",\n  \"description\": \"Description\",\n  \"startDate\": \"2026-08-19T00:00:00Z\",\n  \"endDate\": \"2026-12-31T00:00:00Z\",\n  \"financialGoal\": 0,\n  \"image\": null\n}"
       },
       "metaSortKey": 2
     },
@@ -135,16 +135,16 @@
       "_type": "request",
       "parentId": "fld_crud",
       "name": "Criar Campanha - Título Duplicado (400)",
-      "description": "Esperado: 400. Rode 'Criar Campanha' primeiro — este request usa o mesmo título literal ('Campanha de Teste Insomnia').",
+      "description": "Esperado: 400. Rode 'Criar Campanha' primeiro — este request usa o mesmo título literal ('Campaign Insomnia Test').",
       "method": "POST",
-      "url": "{{ _.baseUrl }}/api/v1/campanhas",
+      "url": "{{ _.baseUrl }}/api/v1/campaigns",
       "headers": [
         { "name": "Content-Type", "value": "application/json" },
         { "name": "X-Dev-Role", "value": "GestorONG" }
       ],
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"titulo\": \"Campanha de Teste Insomnia\",\n  \"descricao\": \"Tentativa de duplicar o título\",\n  \"dataInicio\": \"2026-08-19T00:00:00Z\",\n  \"dataFim\": \"2026-12-31T00:00:00Z\",\n  \"metaFinanceira\": 1000,\n  \"imagem\": null\n}"
+        "text": "{\n  \"title\": \"Campaign Insomnia Test\",\n  \"description\": \"Tentativa de duplicar o título\",\n  \"startDate\": \"2026-08-19T00:00:00Z\",\n  \"endDate\": \"2026-12-31T00:00:00Z\",\n  \"financialGoal\": 1000,\n  \"image\": null\n}"
       },
       "metaSortKey": 2.5
     },
@@ -155,13 +155,13 @@
       "name": "Criar Campanha - Sem Autenticação (401)",
       "description": "Esperado: 401, sem header X-Dev-Role nem Authorization.",
       "method": "POST",
-      "url": "{{ _.baseUrl }}/api/v1/campanhas",
+      "url": "{{ _.baseUrl }}/api/v1/campaigns",
       "headers": [
         { "name": "Content-Type", "value": "application/json" }
       ],
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"titulo\": \"Campanha sem auth\",\n  \"descricao\": \"Descrição\",\n  \"dataInicio\": \"2026-08-19T00:00:00Z\",\n  \"dataFim\": \"2026-12-31T00:00:00Z\",\n  \"metaFinanceira\": 1000,\n  \"imagem\": null\n}"
+        "text": "{\n  \"title\": \"Campaign without auth\",\n  \"description\": \"Description\",\n  \"startDate\": \"2026-08-19T00:00:00Z\",\n  \"endDate\": \"2026-12-31T00:00:00Z\",\n  \"financialGoal\": 1000,\n  \"image\": null\n}"
       },
       "metaSortKey": 3
     },
@@ -172,14 +172,14 @@
       "name": "Criar Campanha - Role Doador (403)",
       "description": "Esperado: 403, role autenticada mas sem permissão de GestorONG.",
       "method": "POST",
-      "url": "{{ _.baseUrl }}/api/v1/campanhas",
+      "url": "{{ _.baseUrl }}/api/v1/campaigns",
       "headers": [
         { "name": "Content-Type", "value": "application/json" },
         { "name": "X-Dev-Role", "value": "Doador" }
       ],
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"titulo\": \"Campanha via Doador\",\n  \"descricao\": \"Descrição\",\n  \"dataInicio\": \"2026-08-19T00:00:00Z\",\n  \"dataFim\": \"2026-12-31T00:00:00Z\",\n  \"metaFinanceira\": 1000,\n  \"imagem\": null\n}"
+        "text": "{\n  \"title\": \"Campaign via Doador\",\n  \"description\": \"Description\",\n  \"startDate\": \"2026-08-19T00:00:00Z\",\n  \"endDate\": \"2026-12-31T00:00:00Z\",\n  \"financialGoal\": 1000,\n  \"image\": null\n}"
       },
       "metaSortKey": 4
     },
@@ -188,16 +188,16 @@
       "_type": "request",
       "parentId": "fld_crud",
       "name": "Atualizar Campanha",
-      "description": "Esperado: 200. Usa a variável de ambiente campanhaId.",
+      "description": "Esperado: 200. Usa a variável de ambiente campaignId.",
       "method": "PUT",
-      "url": "{{ _.baseUrl }}/api/v1/campanhas/{{ _.campanhaId }}",
+      "url": "{{ _.baseUrl }}/api/v1/campaigns/{{ _.campaignId }}",
       "headers": [
         { "name": "Content-Type", "value": "application/json" },
         { "name": "X-Dev-Role", "value": "GestorONG" }
       ],
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"titulo\": \"Campanha de Teste Insomnia - Atualizada\",\n  \"descricao\": \"Atualizada via coleção Insomnia\",\n  \"dataInicio\": \"2026-08-19T00:00:00Z\",\n  \"dataFim\": \"2026-12-31T00:00:00Z\",\n  \"metaFinanceira\": 8000,\n  \"imagem\": null,\n  \"status\": \"Ativa\"\n}"
+        "text": "{\n  \"title\": \"Campaign Insomnia Test - Atualizada\",\n  \"description\": \"Atualizada via coleção Insomnia\",\n  \"startDate\": \"2026-08-19T00:00:00Z\",\n  \"endDate\": \"2026-12-31T00:00:00Z\",\n  \"financialGoal\": 8000,\n  \"image\": null,\n  \"status\": \"Active\"\n}"
       },
       "metaSortKey": 5
     },
@@ -208,14 +208,14 @@
       "name": "Atualizar Campanha - Inexistente (404)",
       "description": "Esperado: 404.",
       "method": "PUT",
-      "url": "{{ _.baseUrl }}/api/v1/campanhas/00000000-0000-0000-0000-000000000000",
+      "url": "{{ _.baseUrl }}/api/v1/campaigns/00000000-0000-0000-0000-000000000000",
       "headers": [
         { "name": "Content-Type", "value": "application/json" },
         { "name": "X-Dev-Role", "value": "GestorONG" }
       ],
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"titulo\": \"Título\",\n  \"descricao\": \"Descrição\",\n  \"dataInicio\": \"2026-08-19T00:00:00Z\",\n  \"dataFim\": \"2026-12-31T00:00:00Z\",\n  \"metaFinanceira\": 1000,\n  \"imagem\": null,\n  \"status\": \"Ativa\"\n}"
+        "text": "{\n  \"title\": \"Title\",\n  \"description\": \"Description\",\n  \"startDate\": \"2026-08-19T00:00:00Z\",\n  \"endDate\": \"2026-12-31T00:00:00Z\",\n  \"financialGoal\": 1000,\n  \"image\": null,\n  \"status\": \"Active\"\n}"
       },
       "metaSortKey": 6
     },
@@ -226,13 +226,13 @@
       "name": "Atualizar Campanha - Sem Autenticação (401)",
       "description": "Esperado: 401.",
       "method": "PUT",
-      "url": "{{ _.baseUrl }}/api/v1/campanhas/{{ _.campanhaId }}",
+      "url": "{{ _.baseUrl }}/api/v1/campaigns/{{ _.campaignId }}",
       "headers": [
         { "name": "Content-Type", "value": "application/json" }
       ],
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"titulo\": \"Título\",\n  \"descricao\": \"Descrição\",\n  \"dataInicio\": \"2026-08-19T00:00:00Z\",\n  \"dataFim\": \"2026-12-31T00:00:00Z\",\n  \"metaFinanceira\": 1000,\n  \"imagem\": null,\n  \"status\": \"Ativa\"\n}"
+        "text": "{\n  \"title\": \"Title\",\n  \"description\": \"Description\",\n  \"startDate\": \"2026-08-19T00:00:00Z\",\n  \"endDate\": \"2026-12-31T00:00:00Z\",\n  \"financialGoal\": 1000,\n  \"image\": null,\n  \"status\": \"Active\"\n}"
       },
       "metaSortKey": 7
     },
@@ -250,7 +250,7 @@
       "name": "1. Listar Públicas (popula o cache)",
       "description": "Esperado: 200, a campanha criada aparece na lista (fica cacheada por 30s).",
       "method": "GET",
-      "url": "{{ _.baseUrl }}/api/v1/campanhas/publicas",
+      "url": "{{ _.baseUrl }}/api/v1/campaigns/public",
       "headers": [],
       "body": {},
       "metaSortKey": 1
@@ -260,16 +260,16 @@
       "_type": "request",
       "parentId": "fld_cache",
       "name": "2. Cancelar Campanha (deve invalidar o cache)",
-      "description": "Esperado: 200. O handler de Atualizar invalida as chaves campanhas:publicas e campanha:{id}.",
+      "description": "Esperado: 200. O handler de Atualizar invalida as chaves campaigns:public e campaign:{id}.",
       "method": "PUT",
-      "url": "{{ _.baseUrl }}/api/v1/campanhas/{{ _.campanhaId }}",
+      "url": "{{ _.baseUrl }}/api/v1/campaigns/{{ _.campaignId }}",
       "headers": [
         { "name": "Content-Type", "value": "application/json" },
         { "name": "X-Dev-Role", "value": "GestorONG" }
       ],
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"titulo\": \"Campanha de Teste Insomnia - Atualizada\",\n  \"descricao\": \"Cancelada para validar invalidação de cache\",\n  \"dataInicio\": \"2026-08-19T00:00:00Z\",\n  \"dataFim\": \"2026-12-31T00:00:00Z\",\n  \"metaFinanceira\": 8000,\n  \"imagem\": null,\n  \"status\": \"Cancelada\"\n}"
+        "text": "{\n  \"title\": \"Campaign Insomnia Test - Atualizada\",\n  \"description\": \"Cancelada para validar invalidação de cache\",\n  \"startDate\": \"2026-08-19T00:00:00Z\",\n  \"endDate\": \"2026-12-31T00:00:00Z\",\n  \"financialGoal\": 8000,\n  \"image\": null,\n  \"status\": \"Cancelled\"\n}"
       },
       "metaSortKey": 2
     },
@@ -280,7 +280,7 @@
       "name": "3. Listar Públicas (confirma invalidação)",
       "description": "Esperado: 200, a campanha cancelada NÃO deve mais aparecer — se aparecer, a invalidação de cache está quebrada (resposta stale).",
       "method": "GET",
-      "url": "{{ _.baseUrl }}/api/v1/campanhas/publicas",
+      "url": "{{ _.baseUrl }}/api/v1/campaigns/public",
       "headers": [],
       "body": {},
       "metaSortKey": 3

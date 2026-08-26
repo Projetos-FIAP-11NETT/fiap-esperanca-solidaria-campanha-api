@@ -1,24 +1,22 @@
-﻿using FiapEsperancaSolidaria.Campanha.Application.DTOs;
-using FiapEsperancaSolidaria.Campanha.Domain.Aggregates.DonationAggregate;
+using FiapEsperancaSolidaria.Campanha.Application.DTOs;
 using FiapEsperancaSolidaria.Campanha.Domain.Contracts.Repositories;
+using FiapEsperancaSolidaria.Campanha.Domain.Exceptions;
 using MediatR;
 
 namespace FiapEsperancaSolidaria.Campanha.Application.Features.DonationFeature.Commands.CreateDonation;
 
 public class CreateDonationCommandHandler(
-        IDonationRepository donationRepository
+        ICampaignRepository campaignRepository
     ) : IRequestHandler<CreateDonationCommand, DonationResponse>
 {
     public async Task<DonationResponse> Handle(CreateDonationCommand request, CancellationToken cancellationToken)
     {
-        var donation = new Donation(
-            request.CampaignId,
-            request.DonorId,
-            request.Amount,
-            request.PaymentMethod
-        );
+        var campaign = await campaignRepository.GetByIdAsync(request.CampaignId, cancellationToken)
+            ?? throw new NotFoundException($"Campanha '{request.CampaignId}' não encontrada.");
 
-        await donationRepository.AddAsync(donation);
+        var donation = campaign.AddDonation(request.DonorId, request.Amount, request.PaymentMethod);
+
+        await campaignRepository.UpdateAsync(campaign, cancellationToken);
 
         return new DonationResponse
         (

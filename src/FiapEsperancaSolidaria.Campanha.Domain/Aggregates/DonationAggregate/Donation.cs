@@ -1,8 +1,6 @@
-﻿using FiapEsperancaSolidaria.Campanha.Domain.Abstractions;
+﻿namespace FiapEsperancaSolidaria.Campanha.Domain.Aggregates.DonationAggregate;
 
-namespace FiapEsperancaSolidaria.Campanha.Domain.Aggregates.DonationAggregate;
-
-public class Donation : IAggregateRoot
+public class Donation
 {
     public Guid Id { get; private set; }
     public Guid CampaignId { get; private set; }

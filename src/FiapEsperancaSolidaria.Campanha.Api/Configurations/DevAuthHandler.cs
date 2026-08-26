@@ -30,13 +30,13 @@ public class DevAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
         if (!Request.Headers.TryGetValue(RoleHeader, out var role) || string.IsNullOrWhiteSpace(role))
             return Task.FromResult(AuthenticateResult.Fail($"Header '{RoleHeader}' é obrigatório no modo dev (ex.: GestorONG ou Doador)."));
 
-        var usuario = Request.Headers.TryGetValue(UserHeader, out var userHeader) && !string.IsNullOrWhiteSpace(userHeader)
+        var user = Request.Headers.TryGetValue(UserHeader, out var userHeader) && !string.IsNullOrWhiteSpace(userHeader)
             ? userHeader.ToString()
             : "dev-user";
 
         var claims = new[]
         {
-            new Claim(ClaimTypes.NameIdentifier, usuario),
+            new Claim(ClaimTypes.NameIdentifier, user),
             new Claim("role", role.ToString())
         };
 
