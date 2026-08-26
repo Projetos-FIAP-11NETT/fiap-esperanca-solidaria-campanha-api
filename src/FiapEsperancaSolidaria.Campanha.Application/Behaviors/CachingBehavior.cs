@@ -19,14 +19,14 @@ public class CachingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, 
         RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
     {
-        var valorEmCache = await _cacheService.ObterAsync<TResponse>(request.CacheKey, cancellationToken);
-        if (valorEmCache is not null)
-            return valorEmCache;
+        var cachedValue = await _cacheService.GetAsync<TResponse>(request.CacheKey, cancellationToken);
+        if (cachedValue is not null)
+            return cachedValue;
 
-        var resposta = await next(cancellationToken);
+        var response = await next(cancellationToken);
 
-        await _cacheService.DefinirAsync(request.CacheKey, resposta, request.Expiracao, cancellationToken);
+        await _cacheService.SetAsync(request.CacheKey, response, request.Expiration, cancellationToken);
 
-        return resposta;
+        return response;
     }
 }
