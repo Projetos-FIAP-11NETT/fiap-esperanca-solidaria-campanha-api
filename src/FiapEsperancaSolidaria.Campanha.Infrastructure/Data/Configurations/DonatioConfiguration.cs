@@ -1,10 +1,10 @@
-using FiapEsperancaSolidaria.Campanha.Domain.Aggregates.DonationAggregate;
+﻿using FiapEsperancaSolidaria.Campanha.Domain.Aggregates.DonationAggregate;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace FiapEsperancaSolidaria.Campanha.Infrastructure.Data.Configurations;
 
-public class DonationConfiguration : IEntityTypeConfiguration<Donation>
+public class DonatioConfiguration : IEntityTypeConfiguration<Donation>
 {
     public void Configure(EntityTypeBuilder<Donation> builder)
     {
