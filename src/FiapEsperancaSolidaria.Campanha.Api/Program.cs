@@ -5,6 +5,7 @@ using FiapEsperancaSolidaria.Campanha.Infrastructure.Configurations;
 using FiapEsperancaSolidaria.Campanha.Observability.Configurations;
 using FiapEsperancaSolidaria.Campanha.Observability.Middlewares;
 using Serilog;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,25 +17,23 @@ builder.Host.UseSerilog((context, loggerConfiguration) =>
         .WriteTo.Console();
 });
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 builder.Services.AddApplication();
-
 builder.Services.AddInfrastructure(builder.Configuration);
-
 builder.Services.AddObservability();
 
 builder.Services.AddHttpContextAccessor();
 
-builder.Services.AddAuthConfig(builder.Configuration);
+builder.Services.AddAuthConfig(builder.Configuration, builder.Environment);
 
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddOpenApiConfiguration();
 
 builder.Services.AddHealthCheckConfiguration(builder.Configuration);
-
-
 
 var app = builder.Build();
 
@@ -51,6 +50,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapHealthChecks("/health");
+app.MapHealthCheckEndpoints();
 
 app.Run();
+
+public partial class Program;

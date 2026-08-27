@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace FiapEsperancaSolidaria.Campanha.Api.Configurations;
 
@@ -6,7 +6,7 @@ public static class HealthCheckConfig
 {
     private static readonly string[] tags = ["db", "postgres", "ready"];
 
-    public static IServiceCollection AddHealthCheckConfiguration(this IServiceCollection services,IConfiguration configuration)
+    public static IServiceCollection AddHealthCheckConfiguration(this IServiceCollection services, IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection");
 

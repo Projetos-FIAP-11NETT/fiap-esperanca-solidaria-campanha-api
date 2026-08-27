@@ -1,0 +1,289 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-08-19T00:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v8.0.0",
+  "resources": [
+    {
+      "_id": "wrk_campanha_api",
+      "_type": "workspace",
+      "parentId": null,
+      "name": "Campanha API - Conexão Solidária",
+      "description": "CRUD restrito a GestorONG, painel público de transparência e cache Redis. Usa o header X-Dev-Role para simular autenticação enquanto a usuarios-api (emissora de tokens Firebase) não existe — só funciona em Development com Auth:DevBypassEnabled=true.",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_base_campanha",
+      "_type": "environment",
+      "parentId": "wrk_campanha_api",
+      "name": "Base Environment",
+      "data": {
+        "baseUrl": "http://localhost:5054",
+        "campaignId": ""
+      },
+      "dataPropertyOrder": { "&": ["baseUrl", "campaignId"] },
+      "color": null,
+      "isPrivate": false,
+      "metaSortKey": 1
+    },
+    {
+      "_id": "fld_health",
+      "_type": "request_group",
+      "parentId": "wrk_campanha_api",
+      "name": "Health",
+      "metaSortKey": 1
+    },
+    {
+      "_id": "req_health_check",
+      "_type": "request",
+      "parentId": "fld_health",
+      "name": "Health Check",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/health",
+      "headers": [],
+      "body": {},
+      "metaSortKey": 1
+    },
+    {
+      "_id": "fld_publico",
+      "_type": "request_group",
+      "parentId": "wrk_campanha_api",
+      "name": "Painel Público",
+      "metaSortKey": 2
+    },
+    {
+      "_id": "req_listar_publicas",
+      "_type": "request",
+      "parentId": "fld_publico",
+      "name": "Listar Campanhas Públicas",
+      "description": "Esperado: 200 com lista de campanhas ativas.",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/v1/campaigns/public",
+      "headers": [],
+      "body": {},
+      "metaSortKey": 1
+    },
+    {
+      "_id": "req_obter_por_id",
+      "_type": "request",
+      "parentId": "fld_publico",
+      "name": "Obter Campanha Por Id",
+      "description": "Esperado: 200. Rode 'Criar Campanha' antes e cole o id retornado na variável de ambiente campaignId.",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/v1/campaigns/{{ _.campaignId }}",
+      "headers": [],
+      "body": {},
+      "metaSortKey": 2
+    },
+    {
+      "_id": "req_obter_por_id_404",
+      "_type": "request",
+      "parentId": "fld_publico",
+      "name": "Obter Campanha Por Id - Inexistente (404)",
+      "description": "Esperado: 404.",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/v1/campaigns/00000000-0000-0000-0000-000000000000",
+      "headers": [],
+      "body": {},
+      "metaSortKey": 3
+    },
+    {
+      "_id": "fld_crud",
+      "_type": "request_group",
+      "parentId": "wrk_campanha_api",
+      "name": "CRUD (GestorONG)",
+      "metaSortKey": 3
+    },
+    {
+      "_id": "req_criar_campanha",
+      "_type": "request",
+      "parentId": "fld_crud",
+      "name": "Criar Campanha",
+      "description": "Esperado: 201. Copie o 'id' da resposta pra variável de ambiente campaignId, usada nos demais requests.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/v1/campaigns",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "X-Dev-Role", "value": "GestorONG" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Campaign Insomnia Test\",\n  \"description\": \"Criada via coleção Insomnia\",\n  \"startDate\": \"2026-08-19T00:00:00Z\",\n  \"endDate\": \"2026-12-31T00:00:00Z\",\n  \"financialGoal\": 5000,\n  \"image\": null\n}"
+      },
+      "metaSortKey": 1
+    },
+    {
+      "_id": "req_criar_campanha_400",
+      "_type": "request",
+      "parentId": "fld_crud",
+      "name": "Criar Campanha - Payload Inválido (400)",
+      "description": "Esperado: 400, título vazio e meta financeira zerada disparam o FluentValidation.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/v1/campaigns",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "X-Dev-Role", "value": "GestorONG" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"\",\n  \"description\": \"Description\",\n  \"startDate\": \"2026-08-19T00:00:00Z\",\n  \"endDate\": \"2026-12-31T00:00:00Z\",\n  \"financialGoal\": 0,\n  \"image\": null\n}"
+      },
+      "metaSortKey": 2
+    },
+    {
+      "_id": "req_criar_campanha_titulo_duplicado",
+      "_type": "request",
+      "parentId": "fld_crud",
+      "name": "Criar Campanha - Título Duplicado (400)",
+      "description": "Esperado: 400. Rode 'Criar Campanha' primeiro — este request usa o mesmo título literal ('Campaign Insomnia Test').",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/v1/campaigns",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "X-Dev-Role", "value": "GestorONG" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Campaign Insomnia Test\",\n  \"description\": \"Tentativa de duplicar o título\",\n  \"startDate\": \"2026-08-19T00:00:00Z\",\n  \"endDate\": \"2026-12-31T00:00:00Z\",\n  \"financialGoal\": 1000,\n  \"image\": null\n}"
+      },
+      "metaSortKey": 2.5
+    },
+    {
+      "_id": "req_criar_campanha_401",
+      "_type": "request",
+      "parentId": "fld_crud",
+      "name": "Criar Campanha - Sem Autenticação (401)",
+      "description": "Esperado: 401, sem header X-Dev-Role nem Authorization.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/v1/campaigns",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Campaign without auth\",\n  \"description\": \"Description\",\n  \"startDate\": \"2026-08-19T00:00:00Z\",\n  \"endDate\": \"2026-12-31T00:00:00Z\",\n  \"financialGoal\": 1000,\n  \"image\": null\n}"
+      },
+      "metaSortKey": 3
+    },
+    {
+      "_id": "req_criar_campanha_403",
+      "_type": "request",
+      "parentId": "fld_crud",
+      "name": "Criar Campanha - Role Doador (403)",
+      "description": "Esperado: 403, role autenticada mas sem permissão de GestorONG.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/v1/campaigns",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "X-Dev-Role", "value": "Doador" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Campaign via Doador\",\n  \"description\": \"Description\",\n  \"startDate\": \"2026-08-19T00:00:00Z\",\n  \"endDate\": \"2026-12-31T00:00:00Z\",\n  \"financialGoal\": 1000,\n  \"image\": null\n}"
+      },
+      "metaSortKey": 4
+    },
+    {
+      "_id": "req_atualizar_campanha",
+      "_type": "request",
+      "parentId": "fld_crud",
+      "name": "Atualizar Campanha",
+      "description": "Esperado: 200. Usa a variável de ambiente campaignId.",
+      "method": "PUT",
+      "url": "{{ _.baseUrl }}/api/v1/campaigns/{{ _.campaignId }}",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "X-Dev-Role", "value": "GestorONG" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Campaign Insomnia Test - Atualizada\",\n  \"description\": \"Atualizada via coleção Insomnia\",\n  \"startDate\": \"2026-08-19T00:00:00Z\",\n  \"endDate\": \"2026-12-31T00:00:00Z\",\n  \"financialGoal\": 8000,\n  \"image\": null,\n  \"status\": \"Active\"\n}"
+      },
+      "metaSortKey": 5
+    },
+    {
+      "_id": "req_atualizar_campanha_404",
+      "_type": "request",
+      "parentId": "fld_crud",
+      "name": "Atualizar Campanha - Inexistente (404)",
+      "description": "Esperado: 404.",
+      "method": "PUT",
+      "url": "{{ _.baseUrl }}/api/v1/campaigns/00000000-0000-0000-0000-000000000000",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "X-Dev-Role", "value": "GestorONG" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Title\",\n  \"description\": \"Description\",\n  \"startDate\": \"2026-08-19T00:00:00Z\",\n  \"endDate\": \"2026-12-31T00:00:00Z\",\n  \"financialGoal\": 1000,\n  \"image\": null,\n  \"status\": \"Active\"\n}"
+      },
+      "metaSortKey": 6
+    },
+    {
+      "_id": "req_atualizar_campanha_401",
+      "_type": "request",
+      "parentId": "fld_crud",
+      "name": "Atualizar Campanha - Sem Autenticação (401)",
+      "description": "Esperado: 401.",
+      "method": "PUT",
+      "url": "{{ _.baseUrl }}/api/v1/campaigns/{{ _.campaignId }}",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Title\",\n  \"description\": \"Description\",\n  \"startDate\": \"2026-08-19T00:00:00Z\",\n  \"endDate\": \"2026-12-31T00:00:00Z\",\n  \"financialGoal\": 1000,\n  \"image\": null,\n  \"status\": \"Active\"\n}"
+      },
+      "metaSortKey": 7
+    },
+    {
+      "_id": "fld_cache",
+      "_type": "request_group",
+      "parentId": "wrk_campanha_api",
+      "name": "Cache Redis",
+      "metaSortKey": 4
+    },
+    {
+      "_id": "req_cache_listar_antes",
+      "_type": "request",
+      "parentId": "fld_cache",
+      "name": "1. Listar Públicas (popula o cache)",
+      "description": "Esperado: 200, a campanha criada aparece na lista (fica cacheada por 30s).",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/v1/campaigns/public",
+      "headers": [],
+      "body": {},
+      "metaSortKey": 1
+    },
+    {
+      "_id": "req_cache_cancelar",
+      "_type": "request",
+      "parentId": "fld_cache",
+      "name": "2. Cancelar Campanha (deve invalidar o cache)",
+      "description": "Esperado: 200. O handler de Atualizar invalida as chaves campaigns:public e campaign:{id}.",
+      "method": "PUT",
+      "url": "{{ _.baseUrl }}/api/v1/campaigns/{{ _.campaignId }}",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "X-Dev-Role", "value": "GestorONG" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Campaign Insomnia Test - Atualizada\",\n  \"description\": \"Cancelada para validar invalidação de cache\",\n  \"startDate\": \"2026-08-19T00:00:00Z\",\n  \"endDate\": \"2026-12-31T00:00:00Z\",\n  \"financialGoal\": 8000,\n  \"image\": null,\n  \"status\": \"Cancelled\"\n}"
+      },
+      "metaSortKey": 2
+    },
+    {
+      "_id": "req_cache_listar_depois",
+      "_type": "request",
+      "parentId": "fld_cache",
+      "name": "3. Listar Públicas (confirma invalidação)",
+      "description": "Esperado: 200, a campanha cancelada NÃO deve mais aparecer — se aparecer, a invalidação de cache está quebrada (resposta stale).",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/v1/campaigns/public",
+      "headers": [],
+      "body": {},
+      "metaSortKey": 3
+    }
+  ]
+}

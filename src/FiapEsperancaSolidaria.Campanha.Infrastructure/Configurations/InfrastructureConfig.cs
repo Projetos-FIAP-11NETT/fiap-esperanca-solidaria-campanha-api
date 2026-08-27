@@ -1,4 +1,6 @@
+using FiapEsperancaSolidaria.Campanha.Domain.Contracts.Cache;
 using FiapEsperancaSolidaria.Campanha.Domain.Contracts.Repositories;
+using FiapEsperancaSolidaria.Campanha.Infrastructure.Cache;
 using FiapEsperancaSolidaria.Campanha.Infrastructure.Data;
 using FiapEsperancaSolidaria.Campanha.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -14,8 +16,14 @@ public static class InfrastructureConfig
         services.AddDbContext<AppDbContext>(
             options => options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
 
-        services.AddScoped<ICampanhaRepository, CampanhaRepository>();
+        services.AddScoped<ICampaignRepository, CampaignRepository>();
         services.AddScoped<IDonationRepository, DonationRepository>();
+
+        services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = configuration.GetConnectionString("Redis");
+        });
+        services.AddScoped<ICacheService, RedisCacheService>();
 
         return services;
     }

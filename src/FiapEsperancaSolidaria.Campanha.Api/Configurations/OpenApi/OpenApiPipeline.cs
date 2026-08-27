@@ -1,4 +1,4 @@
-﻿using Scalar.AspNetCore;
+using Scalar.AspNetCore;
 
 namespace FiapEsperancaSolidaria.Campanha.Api.Configurations.OpenApi;
 
