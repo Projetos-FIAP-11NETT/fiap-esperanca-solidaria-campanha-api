@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FiapEsperancaSolidaria.Campanha.Api.Controllers;
 
 [ApiController]
-[Route("api/v1/campaigns")]
+[Route("api/v1/[controller]")]
 public class CampaignController : ControllerBase
 {
     private readonly IMediator _mediator;

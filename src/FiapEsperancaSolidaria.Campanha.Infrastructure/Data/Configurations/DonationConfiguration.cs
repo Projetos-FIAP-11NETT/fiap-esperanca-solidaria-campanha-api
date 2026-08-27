@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace FiapEsperancaSolidaria.Campanha.Infrastructure.Data.Configurations;
 
-public class DonatioConfiguration : IEntityTypeConfiguration<Donation>
+public class DonationConfiguration : IEntityTypeConfiguration<Donation>
 {
     public void Configure(EntityTypeBuilder<Donation> builder)
     {
