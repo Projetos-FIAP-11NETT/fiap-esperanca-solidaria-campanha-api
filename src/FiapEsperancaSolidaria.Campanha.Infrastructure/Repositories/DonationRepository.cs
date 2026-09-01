@@ -1,4 +1,4 @@
-﻿using FiapEsperancaSolidaria.Campanha.Domain.Aggregates.DonationAggregate;
+﻿using FiapEsperancaSolidaria.Campanha.Domain.Aggregates.CampaignAggregate;
 using FiapEsperancaSolidaria.Campanha.Domain.Contracts.Repositories;
 using FiapEsperancaSolidaria.Campanha.Infrastructure.Data;
 using FiapEsperancaSolidaria.Campanha.Infrastructure.Repositories.Generic;

@@ -1,4 +1,4 @@
-﻿namespace FiapEsperancaSolidaria.Campanha.Domain.Aggregates.DonationAggregate;
+﻿namespace FiapEsperancaSolidaria.Campanha.Domain.Aggregates.CampaignAggregate;
 
 public enum DonationStatus : byte
 {

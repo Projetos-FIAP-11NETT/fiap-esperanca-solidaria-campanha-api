@@ -1,4 +1,4 @@
-using FiapEsperancaSolidaria.Campanha.Domain.Aggregates.DonationAggregate;
+using FiapEsperancaSolidaria.Campanha.Domain.Aggregates.CampaignAggregate;
 using Microsoft.EntityFrameworkCore;
 
 namespace FiapEsperancaSolidaria.Campanha.Infrastructure.Data;
@@ -9,7 +9,7 @@ public class AppDbContext : DbContext
     {
     }
 
-    public DbSet<Domain.Entities.Campaign> Campaigns => Set<Domain.Entities.Campaign>();
+    public DbSet<Campaign> Campaigns => Set<Campaign>();
     public DbSet<Donation> Donations => Set<Donation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

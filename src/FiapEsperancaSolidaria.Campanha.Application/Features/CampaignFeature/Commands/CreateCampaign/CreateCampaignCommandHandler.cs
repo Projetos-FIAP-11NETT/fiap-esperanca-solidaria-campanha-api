@@ -1,5 +1,6 @@
 using FiapEsperancaSolidaria.Campanha.Application.Behaviors;
 using FiapEsperancaSolidaria.Campanha.Application.DTOs;
+using FiapEsperancaSolidaria.Campanha.Domain.Aggregates.CampaignAggregate;
 using FiapEsperancaSolidaria.Campanha.Domain.Contracts.Cache;
 using FiapEsperancaSolidaria.Campanha.Domain.Contracts.Repositories;
 using MediatR;
@@ -13,7 +14,7 @@ public class CreateCampaignCommandHandler(
 {
     public async Task<CampaignResponse> Handle(CreateCampaignCommand request, CancellationToken cancellationToken)
     {
-        var campaign = Domain.Entities.Campaign.Create(
+        var campaign = Campaign.Create(
             request.Title,
             request.Description,
             request.StartDate,

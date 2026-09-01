@@ -1,5 +1,5 @@
 using FiapEsperancaSolidaria.Campanha.Application.DTOs;
-using FiapEsperancaSolidaria.Campanha.Domain.Enums;
+using FiapEsperancaSolidaria.Campanha.Domain.Aggregates.CampaignAggregate;
 using MediatR;
 
 namespace FiapEsperancaSolidaria.Campanha.Application.Features.CampaignFeature.Commands.UpdateCampaign;

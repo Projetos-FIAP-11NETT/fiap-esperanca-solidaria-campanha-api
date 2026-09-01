@@ -6,6 +6,7 @@ using FiapEsperancaSolidaria.Campanha.Observability.Configurations;
 using FiapEsperancaSolidaria.Campanha.Observability.Middlewares;
 using Serilog;
 using System.Text.Json.Serialization;
+using FiapEsperancaSolidaria.Campanha.Queue.Configurations;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +25,7 @@ builder.Services.AddControllers()
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddObservability();
+builder.Services.AddQueueConfig(builder.Configuration);
 
 builder.Services.AddHttpContextAccessor();
 

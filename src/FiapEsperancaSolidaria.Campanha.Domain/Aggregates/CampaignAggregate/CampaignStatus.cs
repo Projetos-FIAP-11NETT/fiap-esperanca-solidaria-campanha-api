@@ -1,4 +1,4 @@
-namespace FiapEsperancaSolidaria.Campanha.Domain.Enums;
+namespace FiapEsperancaSolidaria.Campanha.Domain.Aggregates.CampaignAggregate;
 
 public enum CampaignStatus
 {
