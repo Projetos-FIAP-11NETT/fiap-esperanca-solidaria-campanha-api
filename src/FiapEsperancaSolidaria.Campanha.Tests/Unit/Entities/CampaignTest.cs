@@ -1,8 +1,6 @@
-using FiapEsperancaSolidaria.Campanha.Domain.Entities;
-using FiapEsperancaSolidaria.Campanha.Domain.Enums;
+using FiapEsperancaSolidaria.Campanha.Domain.Aggregates.CampaignAggregate;
 using FiapEsperancaSolidaria.Campanha.Domain.Exceptions;
 using FluentAssertions;
-using Xunit;
 
 namespace FiapEsperancaSolidaria.Campanha.Tests.Unit.Entities;
 
@@ -49,24 +47,31 @@ public class CampaignTest
     }
 
     [Fact]
-    public void CanReceiveDonation_WhenCampaignIsActive_ShouldReturnTrue()
+    public void AddDonation_WhenCampaignIsActive_ShouldSucceed()
     {
         // Arrange
         var campaign = Campaign.Create("Title", "Description", DateTime.UtcNow, DateTime.UtcNow.AddDays(30), 1000m);
 
-        // Act & Assert
-        campaign.CanReceiveDonation().Should().BeTrue();
+        // Act
+        var donation = campaign.AddDonation(Guid.NewGuid(), 100m, PaymentMethod.Pix);
+
+        // Assert
+        donation.Should().NotBeNull();
+        campaign.Donations.Should().ContainSingle();
     }
 
     [Fact]
-    public void CanReceiveDonation_WhenCampaignIsCancelled_ShouldReturnFalse()
+    public void AddDonation_WhenCampaignIsCancelled_ShouldThrow()
     {
         // Arrange
         var campaign = Campaign.Create("Title", "Description", DateTime.UtcNow, DateTime.UtcNow.AddDays(30), 1000m);
         campaign.Cancel();
 
-        // Act & Assert
-        campaign.CanReceiveDonation().Should().BeFalse();
+        // Act
+        var act = () => campaign.AddDonation(Guid.NewGuid(), 100m, PaymentMethod.Pix);
+
+        // Assert
+        act.Should().Throw<BusinessException>();
     }
 
     [Fact]

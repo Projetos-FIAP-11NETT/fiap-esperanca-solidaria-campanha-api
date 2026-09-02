@@ -1,12 +1,12 @@
-using FiapEsperancaSolidaria.Campanha.Domain.Entities;
+using FiapEsperancaSolidaria.Campanha.Domain.Aggregates.CampaignAggregate;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace FiapEsperancaSolidaria.Campanha.Infrastructure.Data.Configurations;
 
-public class CampaignConfiguration : IEntityTypeConfiguration<Domain.Entities.Campaign>
+public class CampaignConfiguration : IEntityTypeConfiguration<Campaign>
 {
-    public void Configure(EntityTypeBuilder<Domain.Entities.Campaign> builder)
+    public void Configure(EntityTypeBuilder<Campaign> builder)
     {
         builder.ToTable("Campaigns");
 

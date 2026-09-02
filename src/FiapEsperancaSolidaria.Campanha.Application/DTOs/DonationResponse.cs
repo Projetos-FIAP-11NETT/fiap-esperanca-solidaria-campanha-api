@@ -1,8 +1,8 @@
-﻿using FiapEsperancaSolidaria.Campanha.Domain.Aggregates.DonationAggregate;
+﻿using FiapEsperancaSolidaria.Campanha.Domain.Aggregates.CampaignAggregate;
 
 namespace FiapEsperancaSolidaria.Campanha.Application.DTOs;
 
-public class DonationResponse(
+public record DonationResponse(
         Guid Id,
         Guid CampaignId,
         Guid DonorId,

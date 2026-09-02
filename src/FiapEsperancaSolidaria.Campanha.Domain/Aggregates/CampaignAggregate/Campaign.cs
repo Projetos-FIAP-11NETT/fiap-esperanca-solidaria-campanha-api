@@ -1,14 +1,10 @@
 using FiapEsperancaSolidaria.Campanha.Domain.Abstractions;
-using FiapEsperancaSolidaria.Campanha.Domain.Aggregates.DonationAggregate;
-using FiapEsperancaSolidaria.Campanha.Domain.Enums;
 using FiapEsperancaSolidaria.Campanha.Domain.Exceptions;
 
-namespace FiapEsperancaSolidaria.Campanha.Domain.Entities;
+namespace FiapEsperancaSolidaria.Campanha.Domain.Aggregates.CampaignAggregate;
 
 public class Campaign : IAggregateRoot
 {
-    private readonly List<Donation> _donations = [];
-
     public Guid CampaignId { get; private set; }
     public string Title { get; private set; } = string.Empty;
     public string Description { get; private set; } = string.Empty;
@@ -20,6 +16,8 @@ public class Campaign : IAggregateRoot
     public decimal TotalRaised { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
+
+    private readonly List<Donation> _donations = [];
     public IReadOnlyCollection<Donation> Donations => _donations.AsReadOnly();
 
     private Campaign()
@@ -62,8 +60,8 @@ public class Campaign : IAggregateRoot
 
         Title = title;
         Description = description;
-        StartDate = startDate;
-        EndDate = endDate;
+        StartDate = DateTime.SpecifyKind(startDate, DateTimeKind.Utc);
+        EndDate = DateTime.SpecifyKind(endDate, DateTimeKind.Utc);
         FinancialGoal = financialGoal;
         Image = image;
         UpdatedAt = DateTime.UtcNow;
@@ -93,7 +91,7 @@ public class Campaign : IAggregateRoot
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public bool CanReceiveDonation() => Status == CampaignStatus.Active;
+    private bool CanReceiveDonation() => Status == CampaignStatus.Active;
 
     public Donation AddDonation(Guid donorId, decimal amount, PaymentMethod paymentMethod)
     {

@@ -1,30 +1,26 @@
+using FiapEsperancaSolidaria.Campanha.Domain.Aggregates.CampaignAggregate;
 using FiapEsperancaSolidaria.Campanha.Domain.Contracts.Repositories;
-using FiapEsperancaSolidaria.Campanha.Domain.Enums;
 using FiapEsperancaSolidaria.Campanha.Domain.Exceptions;
 using FiapEsperancaSolidaria.Campanha.Infrastructure.Data;
+using FiapEsperancaSolidaria.Campanha.Infrastructure.Repositories.Generic;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 namespace FiapEsperancaSolidaria.Campanha.Infrastructure.Repositories;
 
-public class CampaignRepository : ICampaignRepository
+public class CampaignRepository(AppDbContext dbContext) 
+    : Repository<Campaign>(dbContext)
+    , ICampaignRepository
 {
-    private readonly AppDbContext _dbContext;
-
-    public CampaignRepository(AppDbContext dbContext)
+    public async Task<Campaign?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        _dbContext = dbContext;
-    }
-
-    public async Task<Domain.Entities.Campaign?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
-    {
-        return await _dbContext.Campaigns
+        return await dbContext.Campaigns
             .FirstOrDefaultAsync(c => c.CampaignId == id, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Domain.Entities.Campaign>> ListActiveAsync(string? title = null, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Campaign>> ListActiveAsync(string? title = null, CancellationToken cancellationToken = default)
     {
-        var query = _dbContext.Campaigns
+        var query = dbContext.Campaigns
             .Where(c => c.Status == CampaignStatus.Active);
 
         if (!string.IsNullOrWhiteSpace(title))
@@ -43,7 +39,7 @@ public class CampaignRepository : ICampaignRepository
 
     public async Task<bool> ExistsWithTitleAsync(string title, Guid? excludedId = null, CancellationToken cancellationToken = default)
     {
-        var query = _dbContext.Campaigns
+        var query = dbContext.Campaigns
             .Where(c => c.Title.ToLower() == title.ToLower());
 
         if (excludedId is not null)
@@ -52,13 +48,13 @@ public class CampaignRepository : ICampaignRepository
         return await query.AnyAsync(cancellationToken);
     }
 
-    public async Task AddAsync(Domain.Entities.Campaign campaign, CancellationToken cancellationToken = default)
+    public async Task AddAsync(Campaign campaign, CancellationToken cancellationToken = default)
     {
-        await _dbContext.Campaigns.AddAsync(campaign, cancellationToken);
+        await dbContext.Campaigns.AddAsync(campaign, cancellationToken);
         await SaveAsync(cancellationToken);
     }
 
-    public async Task UpdateAsync(Domain.Entities.Campaign campaign, CancellationToken cancellationToken = default)
+    public async Task UpdateAsync(Campaign campaign, CancellationToken cancellationToken = default)
     {
         // Não chama Campaigns.Update(campaign): a entidade já vem rastreada do GetByIdAsync
         // (mesmo DbContext/escopo). Doações novas, porém, têm Id gerado no construtor
@@ -68,8 +64,8 @@ public class CampaignRepository : ICampaignRepository
         // como Added qualquer Donation ainda não rastreada antes de salvar.
         foreach (var donation in campaign.Donations)
         {
-            if (_dbContext.Entry(donation).State == EntityState.Detached)
-                _dbContext.Entry(donation).State = EntityState.Added;
+            if (dbContext.Entry(donation).State == EntityState.Detached)
+                dbContext.Entry(donation).State = EntityState.Added;
         }
 
         await SaveAsync(cancellationToken);
@@ -79,7 +75,7 @@ public class CampaignRepository : ICampaignRepository
     {
         try
         {
-            await _dbContext.SaveChangesAsync(cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
         }
         catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
         {

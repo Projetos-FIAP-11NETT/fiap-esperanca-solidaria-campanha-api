@@ -1,11 +1,9 @@
 using FiapEsperancaSolidaria.Campanha.Application.Features.CampaignFeature.Commands.CreateCampaign;
+using FiapEsperancaSolidaria.Campanha.Domain.Aggregates.CampaignAggregate;
 using FiapEsperancaSolidaria.Campanha.Domain.Contracts.Cache;
 using FiapEsperancaSolidaria.Campanha.Domain.Contracts.Repositories;
-using FiapEsperancaSolidaria.Campanha.Domain.Entities;
-using FiapEsperancaSolidaria.Campanha.Domain.Enums;
 using FluentAssertions;
 using Moq;
-using Xunit;
 
 namespace FiapEsperancaSolidaria.Campanha.Tests.Unit.Application.Campaigns.Commands;
 
