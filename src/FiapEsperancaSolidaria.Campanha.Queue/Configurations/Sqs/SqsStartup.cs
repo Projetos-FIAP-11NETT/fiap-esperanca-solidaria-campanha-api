@@ -15,8 +15,6 @@ public static class SqsStartup
     {
         services.AddMassTransit<ISqsPublish>(x =>
         {
-            //x.AddConsumers(GetConsumers());
-
             x.SetEndpointNameFormatter(
                 new KebabCaseEndpointNameFormatter("catalog", false));
 
@@ -59,10 +57,6 @@ public static class SqsStartup
                 });
 
                 cfg.UseMessageRetry(r => r.Interval(massTransitSettings.RetryCount, massTransitSettings.Interval));
-
-                //cfg.UseConsumeFilter(typeof(NewRelicConsumeFilter<>), context);
-                //cfg.UsePublishFilter(typeof(NewRelicPublishFilter<>), context);
-
                 cfg.ConfigureEndpoints(context);
             });
         });
@@ -89,13 +83,4 @@ public static class SqsStartup
 
         services.AddScoped<IDonationCreatedNotification, DonationCreatedNotification>();
     }
-
-    //private static Type[] GetConsumers()
-    //    => AppDomain.CurrentDomain
-    //        .GetAssemblies()
-    //        .SelectMany(a => a.GetTypes())
-    //        .Where(p => typeof(IConsumer).IsAssignableFrom(p) &&
-    //                    p.Namespace != null &&
-    //                    p.Namespace.Contains("FiapCloudGames.Queue.Consumers.Sqs"))
-    //        .ToArray();
 }
