@@ -9,6 +9,7 @@ COPY ./src/FiapEsperancaSolidaria.Campanha.Application/*.csproj ./FiapEsperancaS
 COPY ./src/FiapEsperancaSolidaria.Campanha.Domain/*.csproj ./FiapEsperancaSolidaria.Campanha.Domain/
 COPY ./src/FiapEsperancaSolidaria.Campanha.Infrastructure/*.csproj ./FiapEsperancaSolidaria.Campanha.Infrastructure/
 COPY ./src/FiapEsperancaSolidaria.Campanha.Observability/*.csproj ./FiapEsperancaSolidaria.Campanha.Observability/
+COPY ./src/FiapEsperancaSolidaria.Campanha.Queue/*.csproj ./FiapEsperancaSolidaria.Campanha.Queue/
 COPY ./src/FiapEsperancaSolidaria.Campanha.Tests/*.csproj ./FiapEsperancaSolidaria.Campanha.Tests/
 
 RUN dotnet restore FiapEsperancaSolidaria.Campanha.slnx
