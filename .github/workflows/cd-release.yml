@@ -50,9 +50,7 @@ jobs:
         run: dotnet restore FiapEsperancaSolidaria.Campanha.slnx
 
       - name: 05 - Build
-        run: dotnet build FiapEsperancaSolidaria.Campanha.slnx \
-          --configuration Release \
-          --no-restore
+        run: dotnet build FiapEsperancaSolidaria.Campanha.slnx --configuration Release --no-restore
 
       - name: 06 - Run Tests
         run: >
