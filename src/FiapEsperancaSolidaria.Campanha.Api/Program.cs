@@ -31,6 +31,7 @@ builder.Services.AddQueueConfig(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddAuthConfig(builder.Configuration, builder.Environment);
+builder.Services.AddCorsConfig(builder.Configuration);
 
 builder.Services.AddEndpointsApiExplorer();
 
@@ -48,6 +49,8 @@ app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<ExceptionMiddleware>();
 
 app.UseHttpsRedirection();
+
+app.UseCors(CorsConfig.PolicyName);
 
 app.UseAuthentication();
 app.UseAuthorization();
