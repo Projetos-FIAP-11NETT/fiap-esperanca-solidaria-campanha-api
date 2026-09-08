@@ -36,7 +36,7 @@ public class Campaign : IAggregateRoot
         {
             CampaignId = Guid.NewGuid(),
             TotalRaised = 0,
-            Status = CampaignStatus.Active,
+            Status = startDate.Date <= DateTime.UtcNow.Date ? CampaignStatus.Active : CampaignStatus.Scheduled,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -73,6 +73,15 @@ public class Campaign : IAggregateRoot
         UpdatedAt = DateTime.UtcNow;
     }
 
+    public void Activate()
+    {
+        if (Status != CampaignStatus.Scheduled)
+            throw new BusinessException("Só uma campanha programada pode ser ativada.");
+
+        Status = CampaignStatus.Active;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     public void Complete()
     {
         if (Status == CampaignStatus.Cancelled)
@@ -86,6 +95,20 @@ public class Campaign : IAggregateRoot
     {
         if (Status == CampaignStatus.Completed)
             throw new BusinessException("Não é possível cancelar uma campanha já concluída.");
+
+        // Se a meta já foi atingida quando pedem o cancelamento, não é uma
+        // campanha cancelada de fato — é uma campanha concluída com sucesso.
+        // TotalRaised é a fonte de verdade (mantida pelo doacao-work a partir do
+        // evento de doação aprovada); some as Donations locais só como fallback
+        // pra quando TotalRaised ainda não foi atualizado (ex.: doacao-work não
+        // está rodando neste ambiente).
+        var raisedAmount = TotalRaised > 0 ? TotalRaised : _donations.Sum(d => d.Amount);
+
+        if (raisedAmount >= FinancialGoal)
+        {
+            Complete();
+            return;
+        }
 
         Status = CampaignStatus.Cancelled;
         UpdatedAt = DateTime.UtcNow;
@@ -102,26 +125,6 @@ public class Campaign : IAggregateRoot
         _donations.Add(donation);
 
         return donation;
-    }
-
-    public void ChangeStatus(CampaignStatus newStatus)
-    {
-        switch (newStatus)
-        {
-            case CampaignStatus.Cancelled:
-                Cancel();
-                break;
-            case CampaignStatus.Completed:
-                Complete();
-                break;
-            case CampaignStatus.Active:
-                if (Status == CampaignStatus.Completed)
-                    throw new BusinessException("Não é possível reativar uma campanha já concluída.");
-
-                Status = CampaignStatus.Active;
-                UpdatedAt = DateTime.UtcNow;
-                break;
-        }
     }
 
     private static void ValidateTitle(string title)

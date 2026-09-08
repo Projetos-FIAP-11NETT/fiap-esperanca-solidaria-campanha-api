@@ -21,6 +21,33 @@ public class CampaignTest
     }
 
     [Fact]
+    public void Create_WhenStartDateIsInTheFuture_ShouldCreateScheduledCampaign()
+    {
+        // Arrange
+        var startDate = DateTime.UtcNow.AddDays(5);
+        var endDate = DateTime.UtcNow.AddDays(30);
+
+        // Act
+        var campaign = Campaign.Create("Title", "Description", startDate, endDate, 1000m);
+
+        // Assert
+        campaign.Status.Should().Be(CampaignStatus.Scheduled);
+    }
+
+    [Fact]
+    public void Create_WhenStartDateIsToday_ShouldCreateActiveCampaign()
+    {
+        // Arrange
+        var endDate = DateTime.UtcNow.AddDays(30);
+
+        // Act
+        var campaign = Campaign.Create("Title", "Description", DateTime.UtcNow.Date, endDate, 1000m);
+
+        // Assert
+        campaign.Status.Should().Be(CampaignStatus.Active);
+    }
+
+    [Fact]
     public void Create_WhenEndDateIsInThePast_ShouldThrowDomainException()
     {
         // Arrange
@@ -72,6 +99,77 @@ public class CampaignTest
 
         // Assert
         act.Should().Throw<BusinessException>();
+    }
+
+    [Fact]
+    public void Activate_WhenCampaignIsScheduled_ShouldSetStatusToActive()
+    {
+        // Arrange
+        var campaign = Campaign.Create("Title", "Description", DateTime.UtcNow.AddDays(5), DateTime.UtcNow.AddDays(30), 1000m);
+
+        // Act
+        campaign.Activate();
+
+        // Assert
+        campaign.Status.Should().Be(CampaignStatus.Active);
+    }
+
+    [Fact]
+    public void Activate_WhenCampaignIsNotScheduled_ShouldThrowBusinessException()
+    {
+        // Arrange
+        var campaign = Campaign.Create("Title", "Description", DateTime.UtcNow, DateTime.UtcNow.AddDays(30), 1000m);
+
+        // Act
+        var act = () => campaign.Activate();
+
+        // Assert
+        act.Should().Throw<BusinessException>();
+    }
+
+    [Fact]
+    public void Cancel_WhenFinancialGoalWasNotReached_ShouldSetStatusToCancelled()
+    {
+        // Arrange
+        var campaign = Campaign.Create("Title", "Description", DateTime.UtcNow, DateTime.UtcNow.AddDays(30), 1000m);
+        campaign.AddDonation(Guid.NewGuid(), 100m, PaymentMethod.Pix);
+
+        // Act
+        campaign.Cancel();
+
+        // Assert
+        campaign.Status.Should().Be(CampaignStatus.Cancelled);
+    }
+
+    [Fact]
+    public void Cancel_WhenFinancialGoalWasReached_ShouldSetStatusToCompletedInstead()
+    {
+        // Arrange
+        var campaign = Campaign.Create("Title", "Description", DateTime.UtcNow, DateTime.UtcNow.AddDays(30), 1000m);
+        campaign.AddDonation(Guid.NewGuid(), 600m, PaymentMethod.Pix);
+        campaign.AddDonation(Guid.NewGuid(), 400m, PaymentMethod.CreditCard);
+
+        // Act
+        campaign.Cancel();
+
+        // Assert
+        campaign.Status.Should().Be(CampaignStatus.Completed);
+    }
+
+    [Fact]
+    public void Cancel_WhenTotalRaisedReachedGoal_ShouldPreferTotalRaisedOverDonationsSum()
+    {
+        // Arrange: TotalRaised é quem o doacao-work mantém — tem que ganhar da soma
+        // local das Donations mesmo quando elas (sozinhas) não bateriam a meta.
+        var campaign = Campaign.Create("Title", "Description", DateTime.UtcNow, DateTime.UtcNow.AddDays(30), 1000m);
+        campaign.AddDonation(Guid.NewGuid(), 100m, PaymentMethod.Pix);
+        typeof(Campaign).GetProperty(nameof(Campaign.TotalRaised))!.SetValue(campaign, 1500m);
+
+        // Act
+        campaign.Cancel();
+
+        // Assert
+        campaign.Status.Should().Be(CampaignStatus.Completed);
     }
 
     [Fact]

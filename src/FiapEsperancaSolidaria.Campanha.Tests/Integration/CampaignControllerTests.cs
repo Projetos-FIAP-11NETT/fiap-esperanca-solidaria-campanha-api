@@ -177,8 +177,7 @@ public class CampaignControllerTests : IClassFixture<CampaignApiFactory>
             StartDate = DateTime.UtcNow.Date,
             EndDate = DateTime.UtcNow.Date.AddDays(60),
             FinancialGoal = 2000m,
-            Image = (string?)null,
-            Status = "Active"
+            Image = (string?)null
         };
 
         var updateResponse = await managerClient.PutAsJsonAsync($"{BaseRoute}/{createdCampaign!.Id}", updatePayload);
@@ -202,8 +201,7 @@ public class CampaignControllerTests : IClassFixture<CampaignApiFactory>
             StartDate = DateTime.UtcNow.Date,
             EndDate = DateTime.UtcNow.Date.AddDays(30),
             FinancialGoal = 1000m,
-            Image = (string?)null,
-            Status = "Active"
+            Image = (string?)null
         };
 
         var response = await managerClient.PutAsJsonAsync($"{BaseRoute}/{Guid.NewGuid()}", payload);
@@ -222,8 +220,7 @@ public class CampaignControllerTests : IClassFixture<CampaignApiFactory>
             StartDate = DateTime.UtcNow.Date,
             EndDate = DateTime.UtcNow.Date.AddDays(30),
             FinancialGoal = 1000m,
-            Image = (string?)null,
-            Status = "Active"
+            Image = (string?)null
         };
 
         var response = await client.PutAsJsonAsync($"{BaseRoute}/{Guid.NewGuid()}", payload);
@@ -246,21 +243,45 @@ public class CampaignControllerTests : IClassFixture<CampaignApiFactory>
             .Content.ReadFromJsonAsync<List<PublicCampaignResponse>>();
         listBefore.Should().Contain(c => c.Title == title);
 
-        var cancelPayload = new
-        {
-            Title = title,
-            Description = "Test description",
-            StartDate = DateTime.UtcNow.Date,
-            EndDate = DateTime.UtcNow.Date.AddDays(30),
-            FinancialGoal = 1000m,
-            Image = (string?)null,
-            Status = "Cancelled"
-        };
-        await managerClient.PutAsJsonAsync($"{BaseRoute}/{createdCampaign!.Id}", cancelPayload);
+        await managerClient.PostAsync($"{BaseRoute}/{createdCampaign!.Id}/cancel", null);
 
         // Se a invalidação de cache não funcionar, a lista abaixo ainda viria da entrada em cache (stale).
         var listAfter = await (await anonymousClient.GetAsync($"{BaseRoute}/public"))
             .Content.ReadFromJsonAsync<List<PublicCampaignResponse>>();
         listAfter.Should().NotContain(c => c.Id == createdCampaign.Id);
+    }
+
+    [Fact]
+    public async Task Cancel_WithGestorONGRole_ShouldCancelCampaign()
+    {
+        var managerClient = CreateClient("GestorONG");
+        var created = await managerClient.PostAsJsonAsync(BaseRoute, CreateValidPayload($"Campaign {Guid.NewGuid()}"));
+        var createdCampaign = await created.Content.ReadFromJsonAsync<CampaignResponse>();
+
+        var cancelResponse = await managerClient.PostAsync($"{BaseRoute}/{createdCampaign!.Id}/cancel", null);
+        cancelResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var body = await cancelResponse.Content.ReadFromJsonAsync<CampaignResponse>();
+        body!.Status.Should().Be("Cancelled");
+    }
+
+    [Fact]
+    public async Task Cancel_WhenNotFound_ShouldReturn404()
+    {
+        var managerClient = CreateClient("GestorONG");
+
+        var response = await managerClient.PostAsync($"{BaseRoute}/{Guid.NewGuid()}/cancel", null);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Cancel_WithoutAuthentication_ShouldReturn401()
+    {
+        var client = CreateClient();
+
+        var response = await client.PostAsync($"{BaseRoute}/{Guid.NewGuid()}/cancel", null);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 }

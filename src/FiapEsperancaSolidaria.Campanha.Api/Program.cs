@@ -1,4 +1,5 @@
 using FiapEsperancaSolidaria.Campanha.Api.Configurations;
+using FiapEsperancaSolidaria.Campanha.Api.Configurations.Jobs;
 using FiapEsperancaSolidaria.Campanha.Api.Configurations.OpenApi;
 using FiapEsperancaSolidaria.Campanha.Application.Configurations;
 using FiapEsperancaSolidaria.Campanha.Infrastructure.Configurations;
@@ -53,6 +54,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapHealthCheckEndpoints();
+app.MapJobsConfiguration();
 
 app.Run();
 
