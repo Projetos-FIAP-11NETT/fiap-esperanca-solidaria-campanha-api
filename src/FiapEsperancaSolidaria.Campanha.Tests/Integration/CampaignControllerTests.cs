@@ -8,7 +8,7 @@ namespace FiapEsperancaSolidaria.Campanha.Tests.Integration;
 
 public class CampaignControllerTests : IClassFixture<CampaignApiFactory>
 {
-    private const string BaseRoute = "/api/v1/campaigns";
+    private const string BaseRoute = "/api/v1/campaign";
 
     private readonly CampaignApiFactory _factory;
 
