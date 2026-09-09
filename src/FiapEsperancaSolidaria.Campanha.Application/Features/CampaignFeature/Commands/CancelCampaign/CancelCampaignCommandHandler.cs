@@ -5,25 +5,19 @@ using FiapEsperancaSolidaria.Campanha.Domain.Contracts.Repositories;
 using FiapEsperancaSolidaria.Campanha.Domain.Exceptions;
 using MediatR;
 
-namespace FiapEsperancaSolidaria.Campanha.Application.Features.CampaignFeature.Commands.UpdateCampaign;
+namespace FiapEsperancaSolidaria.Campanha.Application.Features.CampaignFeature.Commands.CancelCampaign;
 
-public class UpdateCampaignCommandHandler(
+public class CancelCampaignCommandHandler(
         ICampaignRepository campaignRepository,
         ICacheService cacheService
-    ) : IRequestHandler<UpdateCampaignCommand, CampaignResponse>
+    ) : IRequestHandler<CancelCampaignCommand, CampaignResponse>
 {
-    public async Task<CampaignResponse> Handle(UpdateCampaignCommand request, CancellationToken cancellationToken)
+    public async Task<CampaignResponse> Handle(CancelCampaignCommand request, CancellationToken cancellationToken)
     {
         var campaign = await campaignRepository.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException($"Campanha '{request.Id}' não encontrada.");
 
-        campaign.Update(
-            request.Title,
-            request.Description,
-            request.StartDate,
-            request.EndDate,
-            request.FinancialGoal,
-            request.Image);
+        campaign.Cancel();
 
         await campaignRepository.UpdateAsync(campaign, cancellationToken);
 

@@ -75,6 +75,59 @@ confundir as duas coisas.
   (incluindo o security scheme Bearer, já que a API nativa não gera isso
   sozinha como o Swashbuckle fazia) e `OpenApiPipeline.cs` mapeia
   `/openapi/v1.json` e `/docs`.
+- **Status de Campanha (2026-08-26)**: além de `Active`/`Completed`/`Cancelled`,
+  existe `Scheduled` (campanha criada com `StartDate` futura). `Campaign.Create`
+  decide o status inicial comparando `StartDate.Date` com `DateTime.UtcNow.Date`
+  — se ainda não chegou, `Scheduled`; senão, `Active` direto. As transições
+  `Scheduled → Active` e `Active → Completed` são **automáticas**, via job
+  (Hangfire, ver abaixo) — nunca manuais. `Cancelled` é a única transição
+  manual que sobrou, e agora tem comando próprio: `CancelCampaignCommand`
+  (`POST /api/v1/Campaign/{id}/cancel` — rota singular, ver "Rotas via
+  `[controller]`" abaixo). `Campaign.Cancel()` não cancela cegamente: se a
+  meta já foi atingida (`TotalRaised >= FinancialGoal` — `TotalRaised` é a
+  fonte de verdade, mantida pelo `doacao-work` a partir do evento de doação
+  aprovada; enquanto isso não roda neste ambiente, fallback pra soma das
+  `Donations` locais), cancelar vira `Complete()` em vez de `Cancelled` — não
+  faz sentido registrar como "cancelada" uma campanha que já bateu a meta.
+  `UpdateCampaignCommand` **não aceita mais `Status`** — só edita
+  título/descrição/datas/meta/imagem.
+  `Campaign.ChangeStatus` (o switch genérico antigo) foi removido por ficar
+  morto. Regra de fronteira: campanha fica `Active` a partir do dia do
+  `StartDate` (inclusive) e só vira `Completed` no dia **seguinte** ao
+  `EndDate` (fica `Active` durante todo o dia do `EndDate`).
+- **Job de status (Hangfire)**: `RecurringJob` registrado em
+  `Api/Configurations/Jobs/JobsConfig.cs`, roda 1x/dia (`Cron.Daily()`, **UTC
+  padrão, sem ajuste de timezone** — meia-noite UTC, não meia-noite de
+  Brasília) via `UpdateCampaignStatusesJob` (`Application/Jobs`), que dispara
+  `UpdateCampaignStatusesCommand`. A consulta de quem precisa atualizar é
+  `ICampaignRepository.ListPendingStatusUpdateAsync` (sem `AsNoTracking`,
+  porque o handler muda o Status das entidades retornadas e salva em
+  seguida). Escolhido Hangfire em vez de Quartz.NET pela API mais simples
+  (`RecurringJob.AddOrUpdate` em vez de `IJob`/`ITrigger`/registro manual) e
+  pelo dashboard (`/hangfire`, sem auth configurada ainda — decidir antes de
+  produção de verdade). Guarda estado/histórico no mesmo Postgres já
+  existente (`Hangfire.PostgreSql`), schema próprio, zero infra nova (nenhum
+  container a mais). Validado rodando a API de verdade (não só compilando):
+  `Bus started`, Hangfire instala os objetos SQL sozinho, dashboard responde
+  200, e o recurring job fica salvo em `hangfire.hash` com `Cron: 0 0 * * *`,
+  `TimeZoneId: UTC`.
+- **MassTransit rebaixado pra 8.5.3 (2026-09-02)**: estava em 9.2.1
+  (`FiapEsperancaSolidaria.Campanha.Queue.csproj`), que exige licença
+  comercial (`MT_LICENSE`/`MT_LICENSE_PATH`) — sem isso a app inteira
+  derrubava na inicialização (o healthcheck do MassTransit força a criação
+  do bus assim que sobe). 8.5.x é a última major sem essa exigência. As APIs
+  usadas aqui (`AddMassTransit`, `UsingAmazonSqs`,
+  `KebabCaseEndpointNameFormatter`, `UseMessageRetry`) não mudaram entre as
+  duas versões — rebaixar não pediu nenhuma mudança de código, só
+  `MassTransit`/`MassTransit.AmazonSQS` no `.csproj`. Se algum dia quiser
+  voltar pra v9+, vai precisar resolver a licença primeiro.
+- **Rotas via `[controller]` (não string explícita)**: `CampaignController`
+  e `DonationController` usam `[Route("api/v1/[controller]")]` — resolve pro
+  nome da classe sem o sufixo `Controller`, **singular** (`/api/v1/Campaign`,
+  `/api/v1/Donation`, não `/campaigns`/`/donations`). É o padrão que o time
+  adotou nos dois controllers; não "corrigir" pra rota plural explícita de
+  novo — já rolou mais de uma vez de alguém (inclusive eu) achar que era
+  regressão e reverter sem querer.
 
 ## Decisões em aberto
 
@@ -140,3 +193,10 @@ CI/CD ainda não criado. Manifests de Kubernetes existem só para a infra
 compartilhada (Postgres, Redis, Elasticsearch, LocalStack etc., no repo
 `fiap-esperanca-solidaria-infra`) — falta o manifest de deployment do próprio
 `campanha-api`.
+
+Status automático de campanha (`Scheduled`/`Active`/`Completed` via job
+Hangfire diário) e `CancelCampaignCommand` implementados e testados —
+`dotnet test` (unitários da entidade/handlers + integração via
+testcontainers) **e** rodando a API de verdade via `dotnet run` (`Bus
+started`, dashboard do Hangfire em `/hangfire` respondendo, recurring job
+persistido com o cron certo).
