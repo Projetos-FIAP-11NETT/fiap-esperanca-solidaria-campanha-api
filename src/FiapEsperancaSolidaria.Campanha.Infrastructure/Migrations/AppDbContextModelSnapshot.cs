@@ -8,7 +8,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace FiapEsperancaSolidaria.Campanha.Infrastructure.Data.Migrations
+namespace FiapEsperancaSolidaria.Campanha.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
     partial class AppDbContextModelSnapshot : ModelSnapshot
@@ -23,39 +23,7 @@ namespace FiapEsperancaSolidaria.Campanha.Infrastructure.Data.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("FiapEsperancaSolidaria.Campanha.Domain.Aggregates.DonationAggregate.Donation", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("Amount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<Guid>("CampaignId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<byte>("DonationStatus")
-                        .HasColumnType("smallint");
-
-                    b.Property<Guid>("DonorId")
-                        .HasColumnType("uuid");
-
-                    b.Property<byte>("PaymentMethod")
-                        .HasColumnType("smallint");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CampaignId");
-
-                    b.ToTable("Donation", "fundraising");
-                });
-
-            modelBuilder.Entity("FiapEsperancaSolidaria.Campanha.Domain.Entities.Campaign", b =>
+            modelBuilder.Entity("FiapEsperancaSolidaria.Campanha.Domain.Aggregates.CampaignAggregate.Campaign", b =>
                 {
                     b.Property<Guid>("CampaignId")
                         .ValueGeneratedOnAdd()
@@ -113,16 +81,49 @@ namespace FiapEsperancaSolidaria.Campanha.Infrastructure.Data.Migrations
                     b.ToTable("Campaigns", "fundraising");
                 });
 
-            modelBuilder.Entity("FiapEsperancaSolidaria.Campanha.Domain.Aggregates.DonationAggregate.Donation", b =>
+            modelBuilder.Entity("FiapEsperancaSolidaria.Campanha.Domain.Aggregates.CampaignAggregate.Donation", b =>
                 {
-                    b.HasOne("FiapEsperancaSolidaria.Campanha.Domain.Entities.Campaign", null)
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("DonationId");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<Guid>("CampaignId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<byte>("DonationStatus")
+                        .HasColumnType("smallint");
+
+                    b.Property<Guid>("DonorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<byte>("PaymentMethod")
+                        .HasColumnType("smallint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CampaignId");
+
+                    b.ToTable("Donation", "fundraising");
+                });
+
+            modelBuilder.Entity("FiapEsperancaSolidaria.Campanha.Domain.Aggregates.CampaignAggregate.Donation", b =>
+                {
+                    b.HasOne("FiapEsperancaSolidaria.Campanha.Domain.Aggregates.CampaignAggregate.Campaign", null)
                         .WithMany("Donations")
                         .HasForeignKey("CampaignId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("FiapEsperancaSolidaria.Campanha.Domain.Entities.Campaign", b =>
+            modelBuilder.Entity("FiapEsperancaSolidaria.Campanha.Domain.Aggregates.CampaignAggregate.Campaign", b =>
                 {
                     b.Navigation("Donations");
                 });
