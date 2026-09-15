@@ -9,11 +9,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace FiapEsperancaSolidaria.Campanha.Infrastructure.Data.Migrations
+namespace FiapEsperancaSolidaria.Campanha.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260826021532_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260914235558_Add-Table-PaymentEvent")]
+    partial class AddTablePaymentEvent
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -26,39 +26,7 @@ namespace FiapEsperancaSolidaria.Campanha.Infrastructure.Data.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("FiapEsperancaSolidaria.Campanha.Domain.Aggregates.DonationAggregate.Donation", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("Amount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<Guid>("CampaignId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<byte>("DonationStatus")
-                        .HasColumnType("smallint");
-
-                    b.Property<Guid>("DonorId")
-                        .HasColumnType("uuid");
-
-                    b.Property<byte>("PaymentMethod")
-                        .HasColumnType("smallint");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CampaignId");
-
-                    b.ToTable("Donation", "fundraising");
-                });
-
-            modelBuilder.Entity("FiapEsperancaSolidaria.Campanha.Domain.Entities.Campaign", b =>
+            modelBuilder.Entity("FiapEsperancaSolidaria.Campanha.Domain.Aggregates.CampaignAggregate.Campaign", b =>
                 {
                     b.Property<Guid>("CampaignId")
                         .ValueGeneratedOnAdd()
@@ -116,16 +84,74 @@ namespace FiapEsperancaSolidaria.Campanha.Infrastructure.Data.Migrations
                     b.ToTable("Campaigns", "fundraising");
                 });
 
-            modelBuilder.Entity("FiapEsperancaSolidaria.Campanha.Domain.Aggregates.DonationAggregate.Donation", b =>
+            modelBuilder.Entity("FiapEsperancaSolidaria.Campanha.Domain.Aggregates.CampaignAggregate.Donation", b =>
                 {
-                    b.HasOne("FiapEsperancaSolidaria.Campanha.Domain.Entities.Campaign", null)
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("DonationId");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<Guid>("CampaignId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<byte>("DonationStatus")
+                        .HasColumnType("smallint");
+
+                    b.Property<Guid>("DonorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<byte>("PaymentMethod")
+                        .HasColumnType("smallint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CampaignId");
+
+                    b.ToTable("Donation", "fundraising");
+                });
+
+            modelBuilder.Entity("FiapEsperancaSolidaria.Campanha.Domain.Aggregates.PaymentAggregate.PaymentEvent", b =>
+                {
+                    b.Property<Guid>("PaymentEventId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreateAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("DonationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Observation")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<byte>("PaymentEventType")
+                        .HasColumnType("smallint");
+
+                    b.HasKey("PaymentEventId");
+
+                    b.ToTable("PaymentEvent", "fundraising");
+                });
+
+            modelBuilder.Entity("FiapEsperancaSolidaria.Campanha.Domain.Aggregates.CampaignAggregate.Donation", b =>
+                {
+                    b.HasOne("FiapEsperancaSolidaria.Campanha.Domain.Aggregates.CampaignAggregate.Campaign", null)
                         .WithMany("Donations")
                         .HasForeignKey("CampaignId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("FiapEsperancaSolidaria.Campanha.Domain.Entities.Campaign", b =>
+            modelBuilder.Entity("FiapEsperancaSolidaria.Campanha.Domain.Aggregates.CampaignAggregate.Campaign", b =>
                 {
                     b.Navigation("Donations");
                 });
