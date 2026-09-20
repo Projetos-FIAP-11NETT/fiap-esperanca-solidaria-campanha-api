@@ -206,6 +206,50 @@ public class DonationControllerTests : IClassFixture<DonationApiFactory>
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    [Fact]
+    public async Task ListMine_ShouldIncludeDonationsFromCampaignsNoLongerActive()
+    {
+        var managerClient = CreateClient("GestorONG");
+        var donorClient = CreateClient("Doador");
+        var campaign = await CreateCampaignAsync(managerClient);
+
+        var created = await donorClient.PostAsJsonAsync(BaseRoute, CreateValidDonationPayload(campaign.Id));
+        var donation = await created.Content.ReadFromJsonAsync<DonationResponse>(JsonOptions);
+
+        var cancelResponse = await managerClient.PostAsync($"{CampaignRoute}/{campaign.Id}/cancel", null);
+        cancelResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var response = await donorClient.GetAsync($"{BaseRoute}/me");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var receipts = await response.Content.ReadFromJsonAsync<List<DonationReceiptResponse>>(JsonOptions);
+        receipts.Should().ContainSingle(r => r.DonationId == donation!.Id);
+
+        var receipt = receipts!.Single(r => r.DonationId == donation!.Id);
+        receipt.CampaignId.Should().Be(campaign.Id);
+        receipt.CampaignTitle.Should().Be(campaign.Title);
+        receipt.CampaignStatus.Should().Be("Cancelled");
+    }
+
+    [Fact]
+    public async Task ListMine_WithoutAuthentication_ShouldReturn401()
+    {
+        var client = CreateClient();
+
+        var response = await client.GetAsync($"{BaseRoute}/me");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task ListMine_WithGestorONGRole_ShouldReturn403()
+    {
+        var client = CreateClient("GestorONG");
+
+        var response = await client.GetAsync($"{BaseRoute}/me");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
 }
 
 public class DonationApiFactory : CampaignApiFactory
