@@ -21,11 +21,11 @@ public class Repository<T>
 
     public void Remove(T item) => _dbSet.Remove(item);
 
-    public void RemoveRange(IEnumerable<T> entities) => _dbSet.UpdateRange(entities);
+    public void RemoveRange(IEnumerable<T> entities) => _dbSet.RemoveRange(entities);
 
     public async Task BeginTransaction() => await dbContext.Database.BeginTransactionAsync();
 
-    public void CommitTransaction() => dbContext.Database.CommitTransactionAsync();
+    public async Task CommitTransaction() => await dbContext.Database.CommitTransactionAsync();
 
     public void RollbackTransaction() => dbContext.Database.RollbackTransaction();
 

@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -30,12 +30,15 @@ public class DonationControllerTests : IClassFixture<DonationApiFactory>
         _factory = factory;
     }
 
-    private HttpClient CreateClient(string? role = null)
+    private HttpClient CreateClient(string? role = null, Guid? userId = null)
     {
         var client = _factory.CreateClient();
 
         if (role is not null)
             client.DefaultRequestHeaders.Add(TestAuthHandler.RoleHeader, role);
+
+        if (userId is not null)
+            client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, userId.ToString());
 
         return client;
     }
@@ -53,31 +56,35 @@ public class DonationControllerTests : IClassFixture<DonationApiFactory>
     private static object CreateValidDonationPayload(Guid campaignId) => new
     {
         CampaignId = campaignId,
-        DonorId = Guid.NewGuid(),
         Amount = 120m,
         PaymentMethod = "Pix"
     };
 
+    private async Task<CampaignResponse> CreateCampaignAsync(HttpClient managerClient, string? title = null)
+    {
+        var response = await managerClient.PostAsJsonAsync(
+            CampaignRoute,
+            CreateValidCampaignPayload(title ?? $"Campaign {Guid.NewGuid()}"));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        return (await response.Content.ReadFromJsonAsync<CampaignResponse>())!;
+    }
+
     [Fact]
-    public async Task Create_WithGestorONGRole_ShouldReturn201AndPersistDonation()
+    public async Task Create_WithDoadorRole_ShouldReturn201AndPersistDonation()
     {
         var managerClient = CreateClient("GestorONG");
-        var campaignTitle = $"Campaign {Guid.NewGuid()}";
+        var donorClient = CreateClient("Doador");
+        var campaign = await CreateCampaignAsync(managerClient);
 
-        var campaignCreateResponse = await managerClient.PostAsJsonAsync(
-            CampaignRoute,
-            CreateValidCampaignPayload(campaignTitle));
-
-        campaignCreateResponse.StatusCode.Should().Be(HttpStatusCode.Created);
-        var campaign = await campaignCreateResponse.Content.ReadFromJsonAsync<CampaignResponse>();
-
-        var response = await managerClient.PostAsJsonAsync(BaseRoute, CreateValidDonationPayload(campaign!.Id));
+        var response = await donorClient.PostAsJsonAsync(BaseRoute, CreateValidDonationPayload(campaign.Id));
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
         var body = await response.Content.ReadFromJsonAsync<DonationResponse>(JsonOptions);
         body.Should().NotBeNull();
         body!.CampaignId.Should().Be(campaign.Id);
+        body.DonorId.Should().Be(TestAuthHandler.TestUserId);
         body.Amount.Should().Be(120m);
         body.PaymentMethod.ToString().Should().Be("Pix");
         body.Status.ToString().Should().Be("Pending");
@@ -94,9 +101,9 @@ public class DonationControllerTests : IClassFixture<DonationApiFactory>
     }
 
     [Fact]
-    public async Task Create_WithDoadorRole_ShouldReturn403()
+    public async Task Create_WithGestorONGRole_ShouldReturn403()
     {
-        var client = CreateClient("Doador");
+        var client = CreateClient("GestorONG");
 
         var response = await client.PostAsJsonAsync(BaseRoute, CreateValidDonationPayload(Guid.NewGuid()));
 
@@ -106,16 +113,15 @@ public class DonationControllerTests : IClassFixture<DonationApiFactory>
     [Fact]
     public async Task Create_WithInvalidPayload_ShouldReturn400()
     {
-        var managerClient = CreateClient("GestorONG");
+        var donorClient = CreateClient("Doador");
         var invalidPayload = new
         {
             CampaignId = Guid.NewGuid(),
-            DonorId = Guid.NewGuid(),
             Amount = 0m,
             PaymentMethod = "Pix"
         };
 
-        var response = await managerClient.PostAsJsonAsync(BaseRoute, invalidPayload);
+        var response = await donorClient.PostAsJsonAsync(BaseRoute, invalidPayload);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
@@ -123,44 +129,83 @@ public class DonationControllerTests : IClassFixture<DonationApiFactory>
     [Fact]
     public async Task Create_WhenCampaignDoesNotExist_ShouldReturn422()
     {
-        var managerClient = CreateClient("GestorONG");
+        var donorClient = CreateClient("Doador");
         var payload = CreateValidDonationPayload(Guid.NewGuid());
 
-        var response = await managerClient.PostAsJsonAsync(BaseRoute, payload);
+        var response = await donorClient.PostAsJsonAsync(BaseRoute, payload);
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
     [Fact]
-    public async Task GetById_WhenExists_ShouldReturn200WithoutAuthentication()
+    public async Task GetById_WhenOwner_ShouldReturn200WithDonationData()
     {
         var managerClient = CreateClient("GestorONG");
-        var title = $"Campaign {Guid.NewGuid()}";
+        var donorClient = CreateClient("Doador");
+        var campaign = await CreateCampaignAsync(managerClient);
 
-        var created = await managerClient.PostAsJsonAsync(CampaignRoute, CreateValidCampaignPayload(title));
-        created.StatusCode.Should().Be(HttpStatusCode.Created);
-        var createdCampaign = await created.Content.ReadFromJsonAsync<CampaignResponse>();
+        var created = await donorClient.PostAsJsonAsync(BaseRoute, CreateValidDonationPayload(campaign.Id));
+        var donation = await created.Content.ReadFromJsonAsync<DonationResponse>(JsonOptions);
 
-        var anonymousClient = CreateClient();
-        var response = await anonymousClient.GetAsync($"{BaseRoute}/{createdCampaign!.Id}");
+        var response = await donorClient.GetAsync($"{BaseRoute}/{donation!.Id}");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        var body = await response.Content.ReadFromJsonAsync<CampaignResponse>();
-        body.Should().NotBeNull();
-        body!.Id.Should().Be(createdCampaign.Id);
-        body.Title.Should().Be(title);
+        var body = await response.Content.ReadFromJsonAsync<DonationResponse>(JsonOptions);
+        body!.Id.Should().Be(donation.Id);
+        body.CampaignId.Should().Be(campaign.Id);
     }
 
     [Fact]
-    public async Task GetById_WhenNotFound_ShouldReturn404()
+    public async Task GetById_WhenGestorONG_ShouldReturn200EvenNotOwner()
+    {
+        var managerClient = CreateClient("GestorONG", userId: Guid.NewGuid());
+        var donorClient = CreateClient("Doador", userId: Guid.NewGuid());
+        var campaign = await CreateCampaignAsync(managerClient);
+
+        var created = await donorClient.PostAsJsonAsync(BaseRoute, CreateValidDonationPayload(campaign.Id));
+        var donation = await created.Content.ReadFromJsonAsync<DonationResponse>(JsonOptions);
+
+        var response = await managerClient.GetAsync($"{BaseRoute}/{donation!.Id}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task GetById_WhenNotOwnerAndNotGestorONG_ShouldReturn401()
+    {
+        var managerClient = CreateClient("GestorONG");
+        var donorClient = CreateClient("Doador", userId: Guid.NewGuid());
+        var otherDonorClient = CreateClient("Doador", userId: Guid.NewGuid());
+        var campaign = await CreateCampaignAsync(managerClient);
+
+        var created = await donorClient.PostAsJsonAsync(BaseRoute, CreateValidDonationPayload(campaign.Id));
+        var donation = await created.Content.ReadFromJsonAsync<DonationResponse>(JsonOptions);
+
+        var response = await otherDonorClient.GetAsync($"{BaseRoute}/{donation!.Id}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task GetById_WithoutAuthentication_ShouldReturn401()
     {
         var client = CreateClient();
 
         var response = await client.GetAsync($"{BaseRoute}/{Guid.NewGuid()}");
 
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task GetById_WhenNotFound_ShouldReturn404()
+    {
+        var client = CreateClient("Doador");
+
+        var response = await client.GetAsync($"{BaseRoute}/{Guid.NewGuid()}");
+
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
+
 }
 
 public class DonationApiFactory : CampaignApiFactory

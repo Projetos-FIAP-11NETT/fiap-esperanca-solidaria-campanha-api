@@ -13,7 +13,7 @@ public interface IRepository<T> where T : class
 
     Task BeginTransaction();
     void RollbackTransaction();
-    void CommitTransaction();
+    Task CommitTransaction();
 
     Task<bool> SaveChangesAsync(CancellationToken cancellationToken = default);
 

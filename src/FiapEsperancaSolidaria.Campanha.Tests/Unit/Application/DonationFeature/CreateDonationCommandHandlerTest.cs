@@ -1,9 +1,11 @@
-﻿using FiapEsperancaSolidaria.Campanha.Application.Features.DonationFeature.Commands.CreateDonation;
+using FiapEsperancaSolidaria.Campanha.Application.Features.DonationFeature.Commands.CreateDonation;
 using FiapEsperancaSolidaria.Campanha.Domain.Aggregates.CampaignAggregate;
+using FiapEsperancaSolidaria.Campanha.Domain.Contracts.Identity;
 using FiapEsperancaSolidaria.Campanha.Domain.Contracts.Notifications;
 using FiapEsperancaSolidaria.Campanha.Domain.Contracts.Repositories;
 using FiapEsperancaSolidaria.Campanha.Domain.Exceptions;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace FiapEsperancaSolidaria.Campanha.Tests.Unit.Application.DonationFeature;
@@ -12,26 +14,37 @@ public class CreateDonationCommandHandlerTest
 {
     private readonly Mock<ICampaignRepository> _campaignRepositoryMock = new();
     private readonly Mock<IDonationCreatedNotification> _donationCreatedNotificationMock = new();
+    private readonly Mock<ICurrentUserService> _currentUserServiceMock = new();
+    private readonly Mock<ILogger<CreateDonationCommandHandler>> _loggerMock = new();
+    private readonly Guid _donorId = Guid.NewGuid();
+
+    private CreateDonationCommandHandler CreateHandler() =>
+        new(_campaignRepositoryMock.Object, _donationCreatedNotificationMock.Object, _currentUserServiceMock.Object, _loggerMock.Object);
+
+    public CreateDonationCommandHandlerTest()
+    {
+        _currentUserServiceMock.Setup(c => c.UserId).Returns(_donorId);
+    }
 
     [Fact]
     public async Task Handle_WhenRequestIsValid_ShouldCreateDonationUpdateCampaignAndPublishNotification()
     {
         // Arrange
         var campaign = Campaign.Create("Campanha Teste", "Descrição", DateTime.UtcNow, DateTime.UtcNow.AddDays(10), 1000m);
-        var command = new CreateDonationCommand(campaign.CampaignId, Guid.NewGuid(), 150m, PaymentMethod.Pix);
+        var command = new CreateDonationCommand(campaign.CampaignId, 150m, PaymentMethod.Pix);
 
         _campaignRepositoryMock
             .Setup(r => r.GetByIdAsync(command.CampaignId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(campaign);
 
-        var handler = new CreateDonationCommandHandler(_campaignRepositoryMock.Object, _donationCreatedNotificationMock.Object);
+        var handler = CreateHandler();
 
         // Act
         var result = await handler.Handle(command, CancellationToken.None);
 
         // Assert
         result.CampaignId.Should().Be(command.CampaignId);
-        result.DonorId.Should().Be(command.DonorId);
+        result.DonorId.Should().Be(_donorId);
         result.Amount.Should().Be(command.Amount);
         result.PaymentMethod.Should().Be(command.PaymentMethod);
         result.Status.Should().Be(DonationStatus.Pending);
@@ -41,16 +54,34 @@ public class CreateDonationCommandHandlerTest
     }
 
     [Fact]
+    public async Task Handle_WhenUserIsNotAuthenticated_ShouldThrowUnauthorizedAccessException()
+    {
+        // Arrange
+        _currentUserServiceMock.Setup(c => c.UserId).Returns((Guid?)null);
+        var command = new CreateDonationCommand(Guid.NewGuid(), 100m, PaymentMethod.Pix);
+
+        var handler = CreateHandler();
+
+        // Act
+        var act = () => handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
+
+        _campaignRepositoryMock.Verify(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task Handle_WhenCampaignDoesNotExist_ShouldThrowBusinessException()
     {
         // Arrange
-        var command = new CreateDonationCommand(Guid.NewGuid(), Guid.NewGuid(), 100m, PaymentMethod.CreditCard);
+        var command = new CreateDonationCommand(Guid.NewGuid(), 100m, PaymentMethod.CreditCard);
 
         _campaignRepositoryMock
             .Setup(r => r.GetByIdAsync(command.CampaignId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Campaign?)null);
 
-        var handler = new CreateDonationCommandHandler(_campaignRepositoryMock.Object, _donationCreatedNotificationMock.Object);
+        var handler = CreateHandler();
 
         // Act
         var act = () => handler.Handle(command, CancellationToken.None);
@@ -68,7 +99,7 @@ public class CreateDonationCommandHandlerTest
     {
         // Arrange
         var campaign = Campaign.Create("Campanha Teste", "Descrição", DateTime.UtcNow, DateTime.UtcNow.AddDays(10), 1000m);
-        var command = new CreateDonationCommand(campaign.CampaignId, Guid.NewGuid(), 80m, PaymentMethod.Boleto);
+        var command = new CreateDonationCommand(campaign.CampaignId, 80m, PaymentMethod.Boleto);
 
         _campaignRepositoryMock
             .Setup(r => r.GetByIdAsync(command.CampaignId, It.IsAny<CancellationToken>()))
@@ -78,7 +109,7 @@ public class CreateDonationCommandHandlerTest
             .Setup(r => r.UpdateAsync(campaign, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("db error"));
 
-        var handler = new CreateDonationCommandHandler(_campaignRepositoryMock.Object, _donationCreatedNotificationMock.Object);
+        var handler = CreateHandler();
 
         // Act
         var act = () => handler.Handle(command, CancellationToken.None);
@@ -91,11 +122,11 @@ public class CreateDonationCommandHandlerTest
     }
 
     [Fact]
-    public async Task Handle_WhenNotificationPublishFails_ShouldThrowBusinessException()
+    public async Task Handle_WhenNotificationPublishFails_ShouldStillReturnDonationResponse()
     {
         // Arrange
         var campaign = Campaign.Create("Campanha Teste", "Descrição", DateTime.UtcNow, DateTime.UtcNow.AddDays(10), 1000m);
-        var command = new CreateDonationCommand(campaign.CampaignId, Guid.NewGuid(), 120m, PaymentMethod.DebitCard);
+        var command = new CreateDonationCommand(campaign.CampaignId, 120m, PaymentMethod.DebitCard);
 
         _campaignRepositoryMock
             .Setup(r => r.GetByIdAsync(command.CampaignId, It.IsAny<CancellationToken>()))
@@ -105,15 +136,13 @@ public class CreateDonationCommandHandlerTest
             .Setup(n => n.PublishAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("queue error"));
 
-        var handler = new CreateDonationCommandHandler(_campaignRepositoryMock.Object, _donationCreatedNotificationMock.Object);
+        var handler = CreateHandler();
 
         // Act
-        var act = () => handler.Handle(command, CancellationToken.None);
+        var result = await handler.Handle(command, CancellationToken.None);
 
         // Assert
-        await act.Should().ThrowAsync<BusinessException>()
-            .WithMessage("Pagamento não pôde ser processado.");
-
+        result.CampaignId.Should().Be(command.CampaignId);
         _campaignRepositoryMock.Verify(r => r.UpdateAsync(campaign, It.IsAny<CancellationToken>()), Times.Once);
     }
 }
