@@ -18,21 +18,38 @@ public class McpToolsTests
         CampanhaApiUrl = "http://campanha.test",
         UsuarioApiUrl = "http://usuario.test",
         DonorEmail = withCredentials ? "doador@teste.com" : null,
-        DonorPassword = withCredentials ? "Senha@123" : null
+        DonorPassword = withCredentials ? "Senha@123" : null,
+        ManagerEmail = withCredentials ? "gestor@teste.com" : null,
+        ManagerPassword = withCredentials ? "Senha@456" : null
     };
 
-    private static (CampanhaApiClient Api, DonorSession Session, StubHandler Usuario, StubHandler Campanha) Create(
+    // O login falso devolve um token que carrega o e-mail, pra os testes provarem qual conta
+    // (doador ou gestor) fez cada chamada.
+    private static HttpResponseMessage DefaultLogin(HttpRequestMessage _, string body)
+    {
+        using var doc = JsonDocument.Parse(body);
+        var email = doc.RootElement.GetProperty("email").GetString();
+        return Json(HttpStatusCode.OK, new { idToken = $"token-{email}", expiresIn = 3600 });
+    }
+
+    private static (CampanhaApiClient Api, StubHandler Usuario, StubHandler Campanha) Create(
         Func<HttpRequestMessage, string, HttpResponseMessage> campanhaResponder,
         bool withCredentials = true,
         Func<HttpRequestMessage, string, HttpResponseMessage>? usuarioResponder = null)
     {
         var settings = Settings(withCredentials);
-        var usuario = new StubHandler(usuarioResponder ?? ((_, _) => Json(HttpStatusCode.OK, new { idToken = "token-1", expiresIn = 3600 })));
+        var usuario = new StubHandler(usuarioResponder ?? DefaultLogin);
         var campanha = new StubHandler(campanhaResponder);
 
-        var session = new DonorSession(new HttpClient(usuario) { BaseAddress = McpSettings.AsBaseAddress(settings.UsuarioApiUrl) }, settings);
-        var api = new CampanhaApiClient(new HttpClient(campanha) { BaseAddress = McpSettings.AsBaseAddress(settings.CampanhaApiUrl) }, session);
-        return (api, session, usuario, campanha);
+        var usuarioHttp = new HttpClient(usuario) { BaseAddress = McpSettings.AsBaseAddress(settings.UsuarioApiUrl) };
+        var donor = new AccountSession(usuarioHttp, settings.DonorEmail, settings.DonorPassword, "DONOR_EMAIL e DONOR_PASSWORD", "Doador");
+        var manager = new AccountSession(usuarioHttp, settings.ManagerEmail, settings.ManagerPassword, "MANAGER_EMAIL e MANAGER_PASSWORD", "GestorONG");
+
+        var api = new CampanhaApiClient(
+            new HttpClient(campanha) { BaseAddress = McpSettings.AsBaseAddress(settings.CampanhaApiUrl) },
+            donor,
+            manager);
+        return (api, usuario, campanha);
     }
 
     private static HttpResponseMessage Json(HttpStatusCode status, object body) =>
@@ -68,7 +85,7 @@ public class McpToolsTests
     [Fact]
     public async Task Donate_WithoutConfirm_ShouldReturnPreviewAndNotCreateDonation()
     {
-        var (api, _, usuario, campanha) = Create(CampaignThenDonation);
+        var (api, usuario, campanha) = Create(CampaignThenDonation);
 
         var result = await new DonorTools(api).Donate(CampaignId, 50m, "pix", confirm: false);
 
@@ -83,7 +100,7 @@ public class McpToolsTests
     [Fact]
     public async Task Donate_WithConfirm_ShouldPostWithBearerTokenAndNoDonorIdInBody()
     {
-        var (api, _, _, campanha) = Create(CampaignThenDonation);
+        var (api, _, campanha) = Create(CampaignThenDonation);
 
         var result = await new DonorTools(api).Donate(CampaignId, 50m, "PIX", confirm: true);
 
@@ -93,7 +110,7 @@ public class McpToolsTests
 
         var post = campanha.Requests.Single(r => r.Method == HttpMethod.Post);
         post.Path.Should().Be("/api/v1/Donation");
-        post.Authorization.Should().Be("Bearer token-1");
+        post.Authorization.Should().Be("Bearer token-doador@teste.com");
 
         using var body = JsonDocument.Parse(post.Body!);
         body.RootElement.GetProperty("campaignId").GetGuid().Should().Be(CampaignId);
@@ -105,7 +122,7 @@ public class McpToolsTests
     [Fact]
     public async Task Donate_WithInvalidPaymentMethod_ShouldThrowWithoutCallingApi()
     {
-        var (api, _, _, campanha) = Create(CampaignThenDonation);
+        var (api, _, campanha) = Create(CampaignThenDonation);
 
         var act = () => new DonorTools(api).Donate(CampaignId, 50m, "Bitcoin", confirm: true);
 
@@ -118,7 +135,7 @@ public class McpToolsTests
     [InlineData(-5)]
     public async Task Donate_WithNonPositiveAmount_ShouldThrowWithoutCallingApi(decimal amount)
     {
-        var (api, _, _, campanha) = Create(CampaignThenDonation);
+        var (api, _, campanha) = Create(CampaignThenDonation);
 
         var act = () => new DonorTools(api).Donate(CampaignId, amount, "Pix", confirm: true);
 
@@ -129,7 +146,7 @@ public class McpToolsTests
     [Fact]
     public async Task Donate_WhenCampaignIsNotActive_ShouldThrowAndNotCreateDonation()
     {
-        var (api, _, _, campanha) = Create((_, _) => Json(HttpStatusCode.OK, ActiveCampaign("Cancelled")));
+        var (api, _, campanha) = Create((_, _) => Json(HttpStatusCode.OK, ActiveCampaign("Cancelled")));
 
         var act = () => new DonorTools(api).Donate(CampaignId, 50m, "Pix", confirm: true);
 
@@ -148,7 +165,7 @@ public class McpToolsTests
             Receipt(other, "Cancelled", "Approved", 60m),
             Receipt(other, "Cancelled", "Rejected", 10m)
         };
-        var (api, _, _, _) = Create((_, _) => Json(HttpStatusCode.OK, receipts));
+        var (api, _, _) = Create((_, _) => Json(HttpStatusCode.OK, receipts));
 
         var result = await new DonorTools(api).MyDonations();
 
@@ -166,7 +183,7 @@ public class McpToolsTests
     [Fact]
     public async Task Session_ShouldLoginOnlyOnceAcrossCalls()
     {
-        var (api, _, usuario, _) = Create((_, _) => Json(HttpStatusCode.OK, Array.Empty<object>()));
+        var (api, usuario, _) = Create((_, _) => Json(HttpStatusCode.OK, Array.Empty<object>()));
         var tools = new DonorTools(api);
 
         await tools.MyDonations();
@@ -179,7 +196,7 @@ public class McpToolsTests
     [Fact]
     public async Task Session_WithoutCredentials_ShouldThrowClearMessage()
     {
-        var (api, _, usuario, campanha) = Create((_, _) => Json(HttpStatusCode.OK, Array.Empty<object>()), withCredentials: false);
+        var (api, usuario, campanha) = Create((_, _) => Json(HttpStatusCode.OK, Array.Empty<object>()), withCredentials: false);
 
         var act = () => new DonorTools(api).MyDonations();
 
@@ -191,7 +208,7 @@ public class McpToolsTests
     [Fact]
     public async Task Session_WhenLoginFails_ShouldThrowWithoutLeakingPassword()
     {
-        var (api, _, _, _) = Create(
+        var (api, _, _) = Create(
             (_, _) => Json(HttpStatusCode.OK, Array.Empty<object>()),
             usuarioResponder: (_, _) => Json(HttpStatusCode.Unauthorized, new { }));
 
@@ -206,7 +223,7 @@ public class McpToolsTests
     public async Task Client_WhenTokenIsRejected_ShouldLoginAgainAndRetryOnce()
     {
         var calls = 0;
-        var (api, _, usuario, campanha) = Create((_, _) =>
+        var (api, usuario, campanha) = Create((_, _) =>
             ++calls == 1
                 ? Json(HttpStatusCode.Unauthorized, new { })
                 : Json(HttpStatusCode.OK, Array.Empty<object>()));
@@ -221,7 +238,7 @@ public class McpToolsTests
     [Fact]
     public async Task Client_ShouldSurfaceApiErrorMessage()
     {
-        var (api, _, _, _) = Create((_, _) => Json(HttpStatusCode.NotFound, new { error = "Campanha 'x' não encontrada." }));
+        var (api, _, _) = Create((_, _) => Json(HttpStatusCode.NotFound, new { error = "Campanha 'x' não encontrada." }));
 
         var act = () => new CampaignTools(api).GetCampaign(CampaignId);
 
@@ -235,7 +252,7 @@ public class McpToolsTests
         {
             new { id = CampaignId, title = "Campanha A", description = "d", image = (string?)null, financialGoal = 1000m, totalRaised = 250m }
         };
-        var (api, _, usuario, campanha) = Create((_, _) => Json(HttpStatusCode.OK, campaigns));
+        var (api, usuario, campanha) = Create((_, _) => Json(HttpStatusCode.OK, campaigns));
 
         var result = await new CampaignTools(api).SearchCampaigns("tetra & plégicos");
 
@@ -258,7 +275,7 @@ public class McpToolsTests
             new { id = Guid.NewGuid(), title = "Perto", description = "d", image = (string?)null, financialGoal = 1000m, totalRaised = 900m },
             new { id = Guid.NewGuid(), title = "Batida", description = "d", image = (string?)null, financialGoal = 500m, totalRaised = 500m }
         };
-        var (api, _, _, _) = Create((_, _) => Json(HttpStatusCode.OK, campaigns));
+        var (api, _, _) = Create((_, _) => Json(HttpStatusCode.OK, campaigns));
 
         var result = await new CampaignTools(api).TransparencySummary();
 
@@ -271,6 +288,193 @@ public class McpToolsTests
         var closest = doc.RootElement.GetProperty("closestToGoal");
         closest.GetArrayLength().Should().Be(2, "campanha que já bateu a meta não entra");
         closest[0].GetProperty("title").GetString().Should().Be("Perto");
+    }
+
+    // --- tools do gestor ---
+
+    private static string Today => DateTime.UtcNow.ToString("yyyy-MM-dd");
+    private static string InDays(int days) => DateTime.UtcNow.AddDays(days).ToString("yyyy-MM-dd");
+
+    private static object ManagedCampaign(string status, decimal goal = 1000m, decimal raised = 250m) => new
+    {
+        id = CampaignId,
+        title = "Cestas básicas",
+        description = "desc",
+        startDate = DateTime.UtcNow,
+        endDate = DateTime.UtcNow.AddDays(30),
+        image = (string?)null,
+        financialGoal = goal,
+        status,
+        totalRaised = raised
+    };
+
+    [Fact]
+    public async Task ListAllCampaigns_ShouldCountByStatusAndFilter()
+    {
+        var campaigns = new[] { ManagedCampaign("Active"), ManagedCampaign("Active"), ManagedCampaign("Cancelled"), ManagedCampaign("Scheduled") };
+        var (api, _, campanha) = Create((_, _) => Json(HttpStatusCode.OK, campaigns));
+
+        var result = await new ManagerTools(api).ListAllCampaigns("active");
+
+        using var doc = JsonDocument.Parse(result);
+        doc.RootElement.GetProperty("total").GetInt32().Should().Be(4);
+        doc.RootElement.GetProperty("shown").GetInt32().Should().Be(2);
+        doc.RootElement.GetProperty("byStatus").GetProperty("Cancelled").GetInt32().Should().Be(1);
+        campanha.Requests.Single().Authorization.Should().Be("Bearer token-gestor@teste.com");
+        campanha.Requests.Single().Path.Should().Be("/api/v1/Campaign");
+    }
+
+    [Fact]
+    public async Task ListAllCampaigns_WithInvalidStatus_ShouldThrowWithoutCallingApi()
+    {
+        var (api, _, campanha) = Create((_, _) => Json(HttpStatusCode.OK, Array.Empty<object>()));
+
+        var act = () => new ManagerTools(api).ListAllCampaigns("Pausada");
+
+        (await act.Should().ThrowAsync<McpException>()).WithMessage("*Pausada*Scheduled*");
+        campanha.Requests.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task CreateCampaign_WithoutConfirm_ShouldOnlyPreviewAndExpectScheduledForFutureStart()
+    {
+        var (api, usuario, campanha) = Create((_, _) => Json(HttpStatusCode.Created, ManagedCampaign("Scheduled")));
+
+        var result = await new ManagerTools(api).CreateCampaign("Cestas", "desc", InDays(7), InDays(37), 5000m, confirm: false);
+
+        using var doc = JsonDocument.Parse(result);
+        doc.RootElement.GetProperty("created").GetBoolean().Should().BeFalse();
+        doc.RootElement.GetProperty("needsConfirmation").GetBoolean().Should().BeTrue();
+        doc.RootElement.GetProperty("todayUtc").GetString().Should().Be(Today);
+        doc.RootElement.GetProperty("preview").GetProperty("expectedStatus").GetString().Should().Be("Scheduled");
+        campanha.Requests.Should().BeEmpty();
+        usuario.Requests.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task CreateCampaign_WithStartToday_ShouldExpectActive()
+    {
+        var (api, _, _) = Create((_, _) => Json(HttpStatusCode.Created, ManagedCampaign("Active")));
+
+        var result = await new ManagerTools(api).CreateCampaign("Cestas", "desc", Today, InDays(30), 5000m);
+
+        using var doc = JsonDocument.Parse(result);
+        doc.RootElement.GetProperty("preview").GetProperty("expectedStatus").GetString().Should().Be("Active");
+    }
+
+    [Fact]
+    public async Task CreateCampaign_WithConfirm_ShouldPostAsManagerWithIsoDates()
+    {
+        var (api, _, campanha) = Create((_, _) => Json(HttpStatusCode.Created, ManagedCampaign("Scheduled")));
+
+        var result = await new ManagerTools(api).CreateCampaign("  Cestas  ", "desc", InDays(7), InDays(37), 5000m, confirm: true);
+
+        using var doc = JsonDocument.Parse(result);
+        doc.RootElement.GetProperty("created").GetBoolean().Should().BeTrue();
+
+        var post = campanha.Requests.Single();
+        post.Method.Should().Be(HttpMethod.Post);
+        post.Path.Should().Be("/api/v1/Campaign");
+        post.Authorization.Should().Be("Bearer token-gestor@teste.com", "quem cria é a conta de gestor, não a de doador");
+
+        using var body = JsonDocument.Parse(post.Body!);
+        body.RootElement.GetProperty("title").GetString().Should().Be("Cestas");
+        body.RootElement.GetProperty("startDate").GetString().Should().Be(InDays(7));
+        body.RootElement.GetProperty("endDate").GetString().Should().Be(InDays(37));
+        body.RootElement.GetProperty("financialGoal").GetDecimal().Should().Be(5000m);
+    }
+
+    [Theory]
+    [InlineData("01/10/2026", "2026-10-30", 1000, "*AAAA-MM-DD*")]
+    [InlineData("2026-10-30", "2026-10-01", 1000, "*anterior*")]
+    [InlineData("2020-01-01", "2020-02-01", 1000, "*passado*")]
+    [InlineData("2099-01-01", "2099-02-01", 0, "*meta*")]
+    public async Task CreateCampaign_WithInvalidInput_ShouldThrowWithoutCallingApi(string start, string end, decimal goal, string expectedMessage)
+    {
+        var (api, _, campanha) = Create((_, _) => Json(HttpStatusCode.Created, ManagedCampaign("Active")));
+
+        var act = () => new ManagerTools(api).CreateCampaign("Cestas", "desc", start, end, goal, confirm: true);
+
+        (await act.Should().ThrowAsync<McpException>()).WithMessage(expectedMessage);
+        campanha.Requests.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task CancelCampaign_WithoutConfirm_WhenGoalNotReached_ShouldPreviewCancelledAndNotPost()
+    {
+        var (api, _, campanha) = Create((_, _) => Json(HttpStatusCode.OK, ManagedCampaign("Active", goal: 1000m, raised: 250m)));
+
+        var result = await new ManagerTools(api).CancelCampaign(CampaignId, confirm: false);
+
+        using var doc = JsonDocument.Parse(result);
+        doc.RootElement.GetProperty("cancelled").GetBoolean().Should().BeFalse();
+        doc.RootElement.GetProperty("preview").GetProperty("expectedStatusAfter").GetString().Should().Be("Cancelled");
+        campanha.Requests.Should().OnlyContain(r => r.Method == HttpMethod.Get);
+    }
+
+    [Fact]
+    public async Task CancelCampaign_WithoutConfirm_WhenGoalReached_ShouldPreviewCompletedInstead()
+    {
+        var (api, _, _) = Create((_, _) => Json(HttpStatusCode.OK, ManagedCampaign("Active", goal: 1000m, raised: 1000m)));
+
+        var result = await new ManagerTools(api).CancelCampaign(CampaignId, confirm: false);
+
+        using var doc = JsonDocument.Parse(result);
+        var preview = doc.RootElement.GetProperty("preview");
+        preview.GetProperty("expectedStatusAfter").GetString().Should().Be("Completed");
+        preview.GetProperty("note").GetString().Should().Contain("Completed");
+    }
+
+    [Fact]
+    public async Task CancelCampaign_WithConfirm_ShouldPostToCancelAsManager()
+    {
+        var (api, _, campanha) = Create((request, _) => request.Method == HttpMethod.Get
+            ? Json(HttpStatusCode.OK, ManagedCampaign("Active"))
+            : Json(HttpStatusCode.OK, ManagedCampaign("Cancelled")));
+
+        var result = await new ManagerTools(api).CancelCampaign(CampaignId, confirm: true);
+
+        using var doc = JsonDocument.Parse(result);
+        doc.RootElement.GetProperty("done").GetBoolean().Should().BeTrue();
+        doc.RootElement.GetProperty("status").GetString().Should().Be("Cancelled");
+
+        var post = campanha.Requests.Single(r => r.Method == HttpMethod.Post);
+        post.Path.Should().Be($"/api/v1/Campaign/{CampaignId}/cancel");
+        post.Authorization.Should().Be("Bearer token-gestor@teste.com");
+    }
+
+    [Theory]
+    [InlineData("Completed", "*já foi concluída*")]
+    [InlineData("Cancelled", "*já está cancelada*")]
+    public async Task CancelCampaign_WhenAlreadyFinished_ShouldThrowAndNotPost(string status, string expectedMessage)
+    {
+        var (api, _, campanha) = Create((_, _) => Json(HttpStatusCode.OK, ManagedCampaign(status)));
+
+        var act = () => new ManagerTools(api).CancelCampaign(CampaignId, confirm: true);
+
+        (await act.Should().ThrowAsync<McpException>()).WithMessage(expectedMessage);
+        campanha.Requests.Should().OnlyContain(r => r.Method == HttpMethod.Get);
+    }
+
+    [Fact]
+    public async Task ManagerTools_WithoutManagerCredentials_ShouldPointToManagerVariables()
+    {
+        var (api, usuario, _) = Create((_, _) => Json(HttpStatusCode.OK, Array.Empty<object>()), withCredentials: false);
+
+        var act = () => new ManagerTools(api).ListAllCampaigns();
+
+        (await act.Should().ThrowAsync<McpException>()).WithMessage("*MANAGER_EMAIL*MANAGER_PASSWORD*");
+        usuario.Requests.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ManagerTools_WhenApiForbids_ShouldExplainRequiredRole()
+    {
+        var (api, _, _) = Create((_, _) => Json(HttpStatusCode.Forbidden, new { }));
+
+        var act = () => new ManagerTools(api).ListAllCampaigns();
+
+        (await act.Should().ThrowAsync<McpException>()).WithMessage("*GestorONG*");
     }
 
     private static object Receipt(Guid campaignId, string campaignStatus, string status, decimal amount) => new

@@ -4,16 +4,27 @@ using ModelContextProtocol;
 
 namespace FiapEsperancaSolidaria.Campanha.Mcp.Api;
 
-// Faz login do doador na usuario-api e mantém o token em memória até perto de expirar.
-// As credenciais vêm de variáveis de ambiente do processo do servidor MCP, nunca do chat:
-// senha passando pelo modelo ficaria no histórico da conversa.
-public sealed class DonorSession(HttpClient usuarioApi, McpSettings settings)
+// Faz login de uma conta (doador ou gestor) na usuario-api e mantém o token em memória até
+// perto de expirar. As credenciais vêm de variáveis de ambiente do processo do servidor MCP,
+// nunca do chat: senha passando pelo modelo ficaria no histórico da conversa.
+public sealed class AccountSession(
+    HttpClient usuarioApi,
+    string? email,
+    string? password,
+    string credentialsHint,
+    string requiredRole)
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
     private readonly SemaphoreSlim _lock = new(1, 1);
     private string? _token;
     private DateTimeOffset _expiresAt;
+
+    // Ex.: "DONOR_EMAIL e DONOR_PASSWORD" — usado nas mensagens de erro.
+    public string CredentialsHint => credentialsHint;
+
+    // Perfil que a conta precisa ter (Doador ou GestorONG) — usado na mensagem de 403.
+    public string RequiredRole => requiredRole;
 
     public async Task<string> GetTokenAsync(CancellationToken cancellationToken = default)
     {
@@ -26,15 +37,15 @@ public sealed class DonorSession(HttpClient usuarioApi, McpSettings settings)
             if (HasValidToken())
                 return _token!;
 
-            if (string.IsNullOrWhiteSpace(settings.DonorEmail) || string.IsNullOrWhiteSpace(settings.DonorPassword))
-                throw new McpException("Conta do doador não configurada: defina DONOR_EMAIL e DONOR_PASSWORD nas variáveis de ambiente do servidor MCP.");
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+                throw new McpException($"Conta ({requiredRole}) não configurada: defina {credentialsHint} nas variáveis de ambiente do servidor MCP.");
 
             HttpResponseMessage response;
             try
             {
                 response = await usuarioApi.PostAsJsonAsync(
                     "api/v1/User/Login",
-                    new { email = settings.DonorEmail, password = settings.DonorPassword },
+                    new { email, password },
                     cancellationToken);
             }
             catch (HttpRequestException ex)
@@ -45,7 +56,7 @@ public sealed class DonorSession(HttpClient usuarioApi, McpSettings settings)
             using (response)
             {
                 if (!response.IsSuccessStatusCode)
-                    throw new McpException($"Login na usuario-api falhou (HTTP {(int)response.StatusCode}). Confira DONOR_EMAIL e DONOR_PASSWORD.");
+                    throw new McpException($"Login na usuario-api falhou (HTTP {(int)response.StatusCode}). Confira {credentialsHint}.");
 
                 var login = await response.Content.ReadFromJsonAsync<LoginResult>(Json, cancellationToken)
                     ?? throw new McpException("Resposta de login vazia da usuario-api.");
