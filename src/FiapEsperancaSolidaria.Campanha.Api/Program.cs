@@ -24,7 +24,7 @@ builder.Services.AddControllers()
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.AddObservability();
+builder.Services.AddObservability(builder.Configuration);
 builder.Services.AddQueueConfig(builder.Configuration);
 
 builder.Services.AddHttpContextAccessor();
@@ -42,6 +42,7 @@ var app = builder.Build();
 app.MigrateDatabase();
 
 app.MapOpenApiConfiguration();
+app.MapObservabilityEndpoints();
 
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<ExceptionMiddleware>();
