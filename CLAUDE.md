@@ -128,6 +128,42 @@ confundir as duas coisas.
   adotou nos dois controllers; não "corrigir" pra rota plural explícita de
   novo — já rolou mais de uma vez de alguém (inclusive eu) achar que era
   regressão e reverter sem querer.
+- **Servidor MCP (`FiapEsperancaSolidaria.Campanha.Mcp`)**: projeto separado
+  (só fala HTTP com campanha-api e usuario-api, não referencia o código
+  interno), SDK oficial `ModelContextProtocol`, transporte **stdio** — roda
+  local pelo Claude Desktop/Claude Code, então **não gasta token de API**
+  (quem paga o modelo é a assinatura do cliente). Tools públicas:
+  `search_campaigns`, `get_campaign`, `transparency_summary`. Tools do doador
+  (agem como a conta em `DONOR_EMAIL`/`DONOR_PASSWORD`, que fazem login em
+  `POST /api/v1/User/Login` da usuario-api; token em memória, renovado ao
+  expirar ou ao tomar 401): `my_donations` (o recibo `GET /Donation/me`),
+  `get_donation` e `donate`. `donate` é a única com efeito real e tem trava
+  dupla: com `confirm=false` só devolve a prévia, e a descrição manda o modelo
+  pedir confirmação explícita do usuário antes de chamar com `confirm=true`.
+  O `DonorId` nunca é enviado (a campanha-api pega do token). Tools do gestor
+  (`list_all_campaigns`, `create_campaign`, `cancel_campaign`; agem como a
+  conta `MANAGER_EMAIL`/`MANAGER_PASSWORD`, que precisa ter o perfil
+  GestorONG): **só são registradas se `MANAGER_EMAIL` estiver definido** —
+  uma conexão só de doador nem enxerga ferramenta de admin. `create_campaign`
+  e `cancel_campaign` têm a mesma trava de `confirm`; a prévia do cancelamento
+  já avisa a regra de negócio (meta atingida => vira `Completed`, não
+  `Cancelled`) e a do criar mostra o status esperado (`Active` se o início é
+  hoje ou passado, `Scheduled` se futuro). Variáveis:
+  `CAMPANHA_API_URL` (padrão `http://localhost:5054`), `USUARIO_API_URL`
+  (padrão `http://localhost:5043`). A senha fica no ambiente do processo MCP,
+  nunca no chat (passaria pelo histórico da conversa). Stdout é o canal do
+  protocolo: logs vão pra stderr, nunca `Console.WriteLine`. Pra conectar:
+  `dotnet build src/FiapEsperancaSolidaria.Campanha.Mcp -c Release` e apontar
+  o cliente pra `dotnet <caminho>/bin/Release/net10.0/FiapEsperancaSolidaria.Campanha.Mcp.dll`
+  — Claude Code: `claude mcp add campanha -e CAMPANHA_API_URL=... -e DONOR_EMAIL=... -e DONOR_PASSWORD=... -- dotnet <dll>`;
+  Claude Desktop: bloco `mcpServers` no `claude_desktop_config.json` com
+  `command: "dotnet"`, `args: ["<dll>"]` e o `env`. Testado de verdade via
+  stdio contra a campanha-api rodando (fluxo completo doador + gestor: criar
+  Active/Scheduled, título duplicado, doar, recibo com campanha cancelada,
+  cancelar, tools de admin escondidas sem `MANAGER_EMAIL`), usando um login
+  falso + um proxy que traduz `Bearer dev-<Papel>` no header `X-Dev-Role` do
+  bypass de dev. O login real na usuario-api (Firebase) **não** foi
+  exercitado — só coberto por testes com HTTP falso.
 
 ## Decisões em aberto
 

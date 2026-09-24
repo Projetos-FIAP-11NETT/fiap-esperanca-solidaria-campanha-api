@@ -6,6 +6,5 @@ namespace FiapEsperancaSolidaria.Campanha.Application.Features.DonationFeature.C
 
 public sealed record CreateDonationCommand(
     Guid CampaignId,
-    Guid DonorId,
     decimal Amount,
     PaymentMethod PaymentMethod) : IRequest<DonationResponse>;

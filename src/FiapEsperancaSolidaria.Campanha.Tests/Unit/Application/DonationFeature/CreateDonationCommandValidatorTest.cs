@@ -38,22 +38,6 @@ public class CreateDonationCommandValidatorTest
             e.ErrorMessage == "A campanha é obrigatória.");
     }
 
-    [Fact]
-    public void Validate_WhenDonorIdIsEmpty_ShouldHaveError()
-    {
-        // Arrange
-        var command = CreateValidCommand() with { DonorId = Guid.Empty };
-
-        // Act
-        var result = _validator.Validate(command);
-
-        // Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().ContainSingle(e =>
-            e.PropertyName == nameof(CreateDonationCommand.DonorId) &&
-            e.ErrorMessage == "O doador é obrigatório.");
-    }
-
     [Theory]
     [InlineData(0)]
     [InlineData(-10)]
@@ -91,7 +75,6 @@ public class CreateDonationCommandValidatorTest
     private static CreateDonationCommand CreateValidCommand() =>
         new(
             CampaignId: Guid.NewGuid(),
-            DonorId: Guid.NewGuid(),
             Amount: 100m,
             PaymentMethod: PaymentMethod.Pix
         );
