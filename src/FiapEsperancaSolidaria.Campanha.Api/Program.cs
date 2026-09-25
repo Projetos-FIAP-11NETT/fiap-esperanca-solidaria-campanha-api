@@ -48,8 +48,10 @@ app.MapOpenApiConfiguration();
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<ExceptionMiddleware>();
 
-app.UseHttpsRedirection();
-
+if (!app.Environment.IsEnvironment("Kubernetes"))
+{
+    app.UseHttpsRedirection();
+}
 app.UseCors(CorsConfig.PolicyName);
 
 app.UseAuthentication();
