@@ -1,4 +1,5 @@
 using FiapEsperancaSolidaria.Campanha.Api.Configurations;
+using FiapEsperancaSolidaria.Campanha.Api.Configurations.Jobs;
 using FiapEsperancaSolidaria.Campanha.Api.Configurations.OpenApi;
 using FiapEsperancaSolidaria.Campanha.Application.Configurations;
 using FiapEsperancaSolidaria.Campanha.Infrastructure.Configurations;
@@ -30,6 +31,7 @@ builder.Services.AddQueueConfig(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddAuthConfig(builder.Configuration, builder.Environment);
+builder.Services.AddCorsConfig(builder.Configuration);
 
 builder.Services.AddEndpointsApiExplorer();
 
@@ -47,13 +49,18 @@ app.MapObservabilityEndpoints();
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<ExceptionMiddleware>();
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsEnvironment("Kubernetes"))
+{
+    app.UseHttpsRedirection();
+}
+app.UseCors(CorsConfig.PolicyName);
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 app.MapHealthCheckEndpoints();
+app.MapJobsConfiguration();
 
 app.Run();
 

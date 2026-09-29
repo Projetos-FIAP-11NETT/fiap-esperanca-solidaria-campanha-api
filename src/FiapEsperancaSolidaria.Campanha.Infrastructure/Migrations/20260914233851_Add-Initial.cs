@@ -3,10 +3,10 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace FiapEsperancaSolidaria.Campanha.Infrastructure.Data.Migrations
+namespace FiapEsperancaSolidaria.Campanha.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class AddInitial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -42,7 +42,7 @@ namespace FiapEsperancaSolidaria.Campanha.Infrastructure.Data.Migrations
                 schema: "fundraising",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    DonationId = table.Column<Guid>(type: "uuid", nullable: false),
                     CampaignId = table.Column<Guid>(type: "uuid", nullable: false),
                     DonorId = table.Column<Guid>(type: "uuid", nullable: false),
                     Amount = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
@@ -52,7 +52,7 @@ namespace FiapEsperancaSolidaria.Campanha.Infrastructure.Data.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Donation", x => x.Id);
+                    table.PrimaryKey("PK_Donation", x => x.DonationId);
                     table.ForeignKey(
                         name: "FK_Donation_Campaigns_CampaignId",
                         column: x => x.CampaignId,

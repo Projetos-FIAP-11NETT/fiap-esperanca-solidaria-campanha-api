@@ -28,6 +28,7 @@
     <ProjectReference Include="..\FiapEsperancaSolidaria.Campanha.Application\FiapEsperancaSolidaria.Campanha.Application.csproj" />
     <ProjectReference Include="..\FiapEsperancaSolidaria.Campanha.Domain\FiapEsperancaSolidaria.Campanha.Domain.csproj" />
     <ProjectReference Include="..\FiapEsperancaSolidaria.Campanha.Infrastructure\FiapEsperancaSolidaria.Campanha.Infrastructure.csproj" />
+    <ProjectReference Include="..\FiapEsperancaSolidaria.Campanha.Mcp\FiapEsperancaSolidaria.Campanha.Mcp.csproj" />
   </ItemGroup>
 
 </Project>

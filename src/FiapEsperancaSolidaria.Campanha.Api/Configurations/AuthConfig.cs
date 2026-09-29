@@ -1,3 +1,4 @@
+using FiapEsperancaSolidaria.Campanha.Domain.Contracts.Identity;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -34,6 +35,12 @@ public static class AuthConfig
         authBuilder.AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
         {
             options.Authority = authority;
+
+            // Sem isso, o handler remapeia a claim "roles" pro URI legado de role
+            // (ClaimTypes.Role) ANTES do RoleClaimType abaixo ser aplicado — IsInRole
+            // procura por "roles" e não acha nada, [Authorize(Roles=...)] sempre nega.
+            options.MapInboundClaims = false;
+
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
@@ -45,8 +52,9 @@ public static class AuthConfig
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
 
-                // O Firebase envia a role customizada dentro do claim "role".
-                RoleClaimType = "role"
+                // A usuario-api grava os papéis como custom claim "roles" (array) no Firebase,
+                // não "role" (singular) - ver FirebaseService.SetUserRoleAsync no repo da usuario-api.
+                RoleClaimType = "roles"
             };
         });
 
@@ -65,6 +73,7 @@ public static class AuthConfig
         }
 
         services.AddAuthorization();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
 
         return services;
     }

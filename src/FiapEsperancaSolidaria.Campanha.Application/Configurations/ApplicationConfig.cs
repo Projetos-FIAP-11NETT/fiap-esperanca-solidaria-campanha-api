@@ -1,5 +1,6 @@
 using System.Reflection;
 using FiapEsperancaSolidaria.Campanha.Application.Behaviors;
+using FiapEsperancaSolidaria.Campanha.Application.Jobs;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,6 +16,8 @@ public static class ApplicationConfig
         services.AddValidatorsFromAssembly(assembly);
         services.AddTransient(typeof(MediatR.IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddTransient(typeof(MediatR.IPipelineBehavior<,>), typeof(CachingBehavior<,>));
+
+        services.AddScoped<UpdateCampaignStatusesJob>();
 
         return services;
     }

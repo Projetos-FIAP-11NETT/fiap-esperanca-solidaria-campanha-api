@@ -24,8 +24,5 @@ public class UpdateCampaignCommandValidator : AbstractValidator<UpdateCampaignCo
 
         RuleFor(x => x.FinancialGoal)
             .GreaterThan(0).WithMessage("A meta financeira deve ser maior que zero.");
-
-        RuleFor(x => x.Status)
-            .IsInEnum().WithMessage("Status inválido. Valores aceitos: Active, Completed, Cancelled.");
     }
 }

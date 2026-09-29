@@ -25,8 +25,6 @@ public class UpdateCampaignCommandHandler(
             request.FinancialGoal,
             request.Image);
 
-        campaign.ChangeStatus(request.Status);
-
         await campaignRepository.UpdateAsync(campaign, cancellationToken);
 
         await cacheService.RemoveAsync(CacheKeys.PublicCampaigns(), cancellationToken);

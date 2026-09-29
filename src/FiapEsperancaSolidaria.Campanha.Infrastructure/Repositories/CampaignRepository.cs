@@ -34,6 +34,16 @@ public class CampaignRepository(AppDbContext dbContext)
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Campaign>> ListPendingStatusUpdateAsync(DateTime referenceDate, CancellationToken cancellationToken = default)
+    {
+        // Sem AsNoTracking: o handler do job muda o Status dessas entidades e salva em seguida.
+        return await dbContext.Campaigns
+            .Where(c =>
+                (c.Status == CampaignStatus.Scheduled && c.StartDate.Date <= referenceDate.Date) ||
+                (c.Status == CampaignStatus.Active && c.EndDate.Date < referenceDate.Date))
+            .ToListAsync(cancellationToken);
+    }
+
     private static string EscapeLikeWildcards(string value) =>
         value.Replace(@"\", @"\\").Replace("%", @"\%").Replace("_", @"\_");
 

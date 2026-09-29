@@ -12,6 +12,7 @@ public class DonationConfiguration : IEntityTypeConfiguration<Donation>
 
         builder.HasKey(g => g.Id);
         builder.Property(o => o.Id)
+            .HasColumnName("DonationId")
             .ValueGeneratedOnAdd();
 
         builder.Property(g => g.CampaignId)

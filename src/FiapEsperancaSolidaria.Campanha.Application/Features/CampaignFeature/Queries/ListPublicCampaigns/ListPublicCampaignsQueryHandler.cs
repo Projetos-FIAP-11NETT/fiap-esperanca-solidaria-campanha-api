@@ -15,7 +15,7 @@ public class ListPublicCampaignsQueryHandler(
         var campaigns = await campaignRepository.ListActiveAsync(request.Title, cancellationToken);
 
         return campaigns
-            .Select(c => new PublicCampaignResponse(c.CampaignId, c.Title, c.FinancialGoal, c.TotalRaised))
+            .Select(c => new PublicCampaignResponse(c.CampaignId, c.Title, c.Description, c.Image, c.FinancialGoal, c.TotalRaised))
             .ToList();
     }
 }
